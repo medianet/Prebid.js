@@ -22,11 +22,15 @@ const AmnhbAdapter = function AmnhbAdapter() {
         console.log(response);
         console.groupEnd();
 
-        let adUnits = response.ads || [];
+        let adUnits = response.filter(responseItem => responseItem.ad_id);
 
         if (!adUnits) {
             adUnits = [];
         }
+
+        console.groupCollapsed('Clickio HB response adUnits');
+        console.log(adUnits);
+        console.groupEnd();
 
         let bids = $$PREBID_GLOBAL$$._bidsRequested.find(bidSet => bidSet.bidderCode === BIDDER_CODE).bids;
 
@@ -36,7 +40,7 @@ const AmnhbAdapter = function AmnhbAdapter() {
             let adUnit   = null;
 
             // find the adunit in the response
-            for (let j = 0; j < adUnits.length; j++) {
+            /*for (let j = 0; j < adUnits.length; j++) {
                 adUnit = adUnits[j];
                 if (String(bid.params.unit) === String(adUnit.adunitid)
                     && adUnitHasValidSizeFromBid(adUnit, bid) && !adUnit.used
@@ -44,27 +48,29 @@ const AmnhbAdapter = function AmnhbAdapter() {
                     adUnitId = adUnit.adunitid;
                     break;
                 }
-            }
+            }*/
 
-            let beaconParams = {
-                bd: +(new Date())-startTime,
-                br: '0', // maybe 0, t, or p
-                bt: $$PREBID_GLOBAL$$.cbTimeout || $$PREBID_GLOBAL$$.bidderTimeout, // For the timeout per bid request
-                bs: window.location.hostname
-            };
+            adUnit = adUnits.find(adUnit => adUnit.ad_id == bid.params.sds_id);
+
+            console.groupCollapsed('Clickio HB response matched bid/adUnit');
+            console.log(bid);
+            console.log(adUnit);
 
             // no fill :(
-            if (!adUnitId || !adUnit.pub_rev) {
+            if (!adUnit || !adUnit.cpm || !adUnit.ad) {
+                console.log('--- No fill ---');
+                console.groupEnd();
+
                 addBidResponse(null, bid);
                 continue;
             }
+
+            console.log('--- Valid bid ---');
+            console.groupEnd();
+
             adUnit.used = true;
 
-            beaconParams.br = beaconParams.bt < beaconParams.bd ? 't' : 'p';
-            beaconParams.bp = adUnit.pub_rev;
-            beaconParams.ts = adUnit.ts;
             addBidResponse(adUnit, bid);
-            buildBoPixel(adUnit.creative[0], beaconParams);
         }
     };
 
@@ -73,18 +79,13 @@ const AmnhbAdapter = function AmnhbAdapter() {
         bidResponse.bidderCode = BIDDER_CODE;
 
         if (adUnit) {
-            let creative      = adUnit.creative[0];
-            bidResponse.ad    = adUnit.html;
-            bidResponse.cpm   = Number(adUnit.pub_rev)/1000;
-            bidResponse.ad_id = adUnit.adid;
-            if (adUnit.deal_id) {
-                bidResponse.dealId = adUnit.deal_id;
-            }
-            if (creative) {
-                bidResponse.width  = creative.width;
-                bidResponse.height = creative.height;
-            }
+            bidResponse.ad_id  = adUnit.ad_id;
+            bidResponse.ad     = adUnit.ad;
+            bidResponse.cpm    = Number(adUnit.cpm);
+            bidResponse.width  = Number(adUnit.width);
+            bidResponse.height = Number(adUnit.height);
         }
+
         bidmanager.addBidResponse(bid.placementCode, bidResponse);
     }
 
