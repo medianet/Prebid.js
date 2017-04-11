@@ -131,7 +131,7 @@ const AmnhbAdapter = function AmnhbAdapter() {
             return;
         }
 
-        params['ids'] = utils._map(bids, bid => bid['params']['site_area_id']).join(',');
+        params['ids'] = utils._map(bids, bid => bid['params']['sds_id']).join(',');
         params['szs'] = utils._map(bids, bid => {return utils.parseSizesInput(bid.sizes).join(',');}).join('|');
 
         /*bids.forEach(function (bid) {
