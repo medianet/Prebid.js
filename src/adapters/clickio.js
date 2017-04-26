@@ -22,7 +22,7 @@ const AmnhbAdapter = function AmnhbAdapter() {
         console.log(response);
         console.groupEnd();
 
-        let adUnits = response.filter(responseItem => responseItem.ad_id);
+        let adUnits = response.filter(responseItem => responseItem.id);
 
         if (!adUnits) {
             adUnits = [];
@@ -50,7 +50,7 @@ const AmnhbAdapter = function AmnhbAdapter() {
                 }
             }*/
 
-            adUnit = adUnits.find(adUnit => adUnit.ad_id == bid.params.sds_id);
+            adUnit = adUnits.find(adUnit => adUnit.id == bid.params.site_area_id);
 
             console.groupCollapsed('Clickio HB response matched bid/adUnit');
             console.log(bid);
@@ -79,7 +79,7 @@ const AmnhbAdapter = function AmnhbAdapter() {
         bidResponse.bidderCode = BIDDER_CODE;
 
         if (adUnit) {
-            bidResponse.ad_id  = adUnit.ad_id;
+            bidResponse.ad_id  = adUnit.id;
             bidResponse.ad     = adUnit.ad;
             bidResponse.cpm    = Number(adUnit.cpm);
             bidResponse.width  = Number(adUnit.width);
@@ -132,7 +132,7 @@ const AmnhbAdapter = function AmnhbAdapter() {
             return;
         }
 
-        let ids       = utils._map(bids, bid => bid['params']['sds_id']).join(';');
+        let ids       = utils._map(bids, bid => bid['params']['site_area_id']).join(';');
         params['szs'] = utils._map(bids, bid => {return utils.parseSizesInput(bid.sizes).join(',');}).join(';');
 
         /*bids.forEach(function (bid) {
@@ -143,13 +143,17 @@ const AmnhbAdapter = function AmnhbAdapter() {
             }
         });*/
 
-        let requestUrl = `//${biddingDomain}/hb/${ids}/?${buildQueryStringFromParams(params)}`;
+        if (ids) {
+            let requestUrl = `//${biddingDomain}/hb/${ids}/?${buildQueryStringFromParams(params)}`;
 
-        console.groupCollapsed('Clickio HB request url');
-        console.log(requestUrl);
-        console.groupEnd();
+            console.groupCollapsed('Clickio HB request url');
+            console.log(requestUrl);
+            console.groupEnd();
 
-        adloader.loadScript(requestUrl);
+            adloader.loadScript(requestUrl);
+        } else {
+            console.log('Clickio HB no areas to bid');
+        }
     }
 
     function callBids(bidsObj) {
