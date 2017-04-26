@@ -79,11 +79,11 @@ const AmnhbAdapter = function AmnhbAdapter() {
         bidResponse.bidderCode = BIDDER_CODE;
 
         if (adUnit) {
-            bidResponse.ad_id  = adUnit.id;
-            bidResponse.ad     = adUnit.ad;
-            bidResponse.cpm    = Number(adUnit.cpm);
-            bidResponse.width  = Number(adUnit.width);
-            bidResponse.height = Number(adUnit.height);
+            bidResponse.site_area_id = adUnit.id;
+            bidResponse.ad           = adUnit.ad;
+            bidResponse.cpm          = Number(adUnit.cpm);
+            bidResponse.width        = Number(adUnit.width);
+            bidResponse.height       = Number(adUnit.height);
         }
 
         bidmanager.addBidResponse(bid.placementCode, bidResponse);
