@@ -132,8 +132,8 @@ const AmnhbAdapter = function AmnhbAdapter() {
             return;
         }
 
-        params['ids'] = utils._map(bids, bid => bid['params']['sds_id']).join(',');
-        params['szs'] = utils._map(bids, bid => {return utils.parseSizesInput(bid.sizes).join(',');}).join('|');
+        let ids       = utils._map(bids, bid => bid['params']['sds_id']).join(';');
+        params['szs'] = utils._map(bids, bid => {return utils.parseSizesInput(bid.sizes).join(',');}).join(';');
 
         /*bids.forEach(function (bid) {
             for (let customParam in bid.params.customParams) {
@@ -143,7 +143,7 @@ const AmnhbAdapter = function AmnhbAdapter() {
             }
         });*/
 
-        let requestUrl = `//${biddingDomain}/hb.php?${buildQueryStringFromParams(params)}`;
+        let requestUrl = `//${biddingDomain}/hb/${ids}/?${buildQueryStringFromParams(params)}`;
 
         console.groupCollapsed('Clickio HB request url');
         console.log(requestUrl);
