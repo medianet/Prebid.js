@@ -32,6 +32,8 @@ var DistrictmAdaptor = function districtmAdaptor(){
       bidmanager.addBidResponse(bidObject.placementCode, bid);
     }
 
+    bid.requestBidId = bidObject.bidId;
+
     return bid;
   };
 
