@@ -4,7 +4,7 @@ const adloader   = require('../adloader');
 const CONSTANTS  = require('../constants.json');
 const utils      = require('../utils.js');
 
-const AmnhbAdapter = function AmnhbAdapter() {
+const ClickioAdapter = function ClickioAdapter() {
     const BIDDER_CODE        = 'clickio';
     let instanceCallbackName = BIDDER_CODE+utils.getUniqueIdentifierStr();
 
@@ -211,4 +211,4 @@ const AmnhbAdapter = function AmnhbAdapter() {
     };
 };
 
-module.exports = AmnhbAdapter;
+module.exports = ClickioAdapter;
