@@ -13,6 +13,7 @@
     "aol",
     "appnexus",
     "appnexusAst",
+    "beachfront",
     "audienceNetwork",
     "conversant",
     "districtmDMX",
@@ -20,6 +21,7 @@
     "gumgum",
     "hiromedia",
     "indexExchange",
+    "innity",
     "kruxlink",
     "getintent",
     "inneractive",
@@ -29,11 +31,14 @@
     "openx",
     "piximedia",
     "pubmatic",
+    "pubgears",
     "pulsepoint",
     "pulsepointLite",
+    "quantcast",
     "rhythmone",
     "rubicon",
     "smartyads",
+    "huddledmasses",
     "smartadserver",
     "sekindoUM",
     "serverbid",
@@ -61,6 +66,9 @@
     "admixer",
     "atomx",
     "tapsense",
+    "trion",
+    "prebidServer",
+    "adsupply",
     {
       "appnexus": {
         "alias": "brealtime"
@@ -87,6 +95,11 @@
       }
     },    {
       "vertamedia": {
+        "supportedMediaTypes": ["video"]
+      }
+    },
+    {
+      "beachfront": {
         "supportedMediaTypes": ["video"]
       }
     },
