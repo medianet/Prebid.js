@@ -25,7 +25,7 @@ var optimizejs = require('gulp-optimize-js');
 
 var CI_MODE = process.env.NODE_ENV === 'ci';
 var prebid = require('./package.json');
-var dateString = 'Updated : ' + (new Date()).toISOString().substring(0, 10);
+var dateString = 'Updated : ' + (new Date()).toISOString().split('T').join(' ').substring(0, 19);
 var packageNameVersion = prebid.name + '_' + prebid.version;
 var banner = '/* <%= prebid.name %> v<%= prebid.version %>\n' + dateString + ' */\n';
 var analyticsDirectory = '../analytics';
