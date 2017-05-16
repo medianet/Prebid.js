@@ -113,6 +113,7 @@ var CriteoAdapter = function CriteoAdapter() {
           bidObject.ad = bidResponse.creative;
           bidObject.width = bidResponse.width;
           bidObject.height = bidResponse.height;
+          bidObject.requestBidId = slots[i].bidId;
         }
         else {
           bidObject = _invalidBidResponse();
