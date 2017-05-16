@@ -113,7 +113,7 @@ var CriteoAdapter = function CriteoAdapter() {
           bidObject.ad = bidResponse.creative;
           bidObject.width = bidResponse.width;
           bidObject.height = bidResponse.height;
-          bidObject.requestBidId = slots[i].bidId;
+          bidObject.transactionId = slots[i].transactionId;
         }
         else {
           bidObject = _invalidBidResponse();
@@ -126,7 +126,9 @@ var CriteoAdapter = function CriteoAdapter() {
   function _callbackError(slots) {
     return function () {
       for (var i = 0; i < slots.length; i++) {
-        bidmanager.addBidResponse(slots[i].impId, _invalidBidResponse());
+        let invalidBid = _invalidBidResponse();
+        invalidBid.transactionId = slots[i].transactionId;
+        bidmanager.addBidResponse(slots[i].impId, invalidBid);
       }
     };
   }
