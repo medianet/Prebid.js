@@ -56,9 +56,9 @@ var CriteoAdapter = function CriteoAdapter() {
         _profileId,
         new Criteo.PubTag.DirectBidding.DirectBiddingUrlBuilder(isAudit),
         slots,
-        _callbackSuccess(slots),
-        _callbackError(slots),
-        _callbackError(slots) // timeout handled as error
+        _callbackSuccess(slots, bids),
+        _callbackError(slots, bids),
+        _callbackError(slots, bids) // timeout handled as error
       );
 
       // process the event as soon as possible
@@ -80,7 +80,7 @@ var CriteoAdapter = function CriteoAdapter() {
     return jsonbidsResponse.slots === undefined;
   }
 
-  function _callbackSuccess(slots) {
+  function _callbackSuccess(slots, bids) {
     return function (bidsResponse) {
       var jsonbidsResponse = parseBidResponse(bidsResponse);
 
@@ -88,6 +88,7 @@ var CriteoAdapter = function CriteoAdapter() {
 
       for (var i = 0; i < slots.length; i++) {
         var bidResponse = null;
+        var bidRequest  = bids[i];
 
         // look for the matching bid response
         for (var j = 0; j < jsonbidsResponse.slots.length; j++) {
@@ -109,15 +110,20 @@ var CriteoAdapter = function CriteoAdapter() {
         } else {
           bidObject = _invalidBidResponse();
         }
+
+        bidObject.adId = bidRequest.bidId;
+
         bidmanager.addBidResponse(slots[i].impId, bidObject);
       }
     };
   }
 
-  function _callbackError(slots) {
+  function _callbackError(slots, bids) {
     return function () {
       for (var i = 0; i < slots.length; i++) {
-        bidmanager.addBidResponse(slots[i].impId, _invalidBidResponse());
+        let tmpInvalidBid = _invalidBidResponse();
+        tmpInvalidBid.adId = bids[i].bidId;
+        bidmanager.addBidResponse(slots[i].impId, tmpInvalidBid);
       }
     };
   }
