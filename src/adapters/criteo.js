@@ -101,17 +101,15 @@ var CriteoAdapter = function CriteoAdapter() {
         // register the bid response
         var bidObject;
         if (bidResponse) {
-          bidObject = bidfactory.createBid(1);
+          bidObject = bidfactory.createBid(CONSTANTS.STATUS.GOOD, bidRequest);
           bidObject.bidderCode = _bidderCode;
           bidObject.cpm = bidResponse.cpm;
           bidObject.ad = bidResponse.creative;
           bidObject.width = bidResponse.width;
           bidObject.height = bidResponse.height;
         } else {
-          bidObject = _invalidBidResponse();
+          bidObject = _invalidBidResponse(bidRequest);
         }
-
-        bidObject.adId = bidRequest.bidId;
 
         bidmanager.addBidResponse(slots[i].impId, bidObject);
       }
@@ -121,15 +119,13 @@ var CriteoAdapter = function CriteoAdapter() {
   function _callbackError(slots, bids) {
     return function () {
       for (var i = 0; i < slots.length; i++) {
-        let tmpInvalidBid = _invalidBidResponse();
-        tmpInvalidBid.adId = bids[i].bidId;
-        bidmanager.addBidResponse(slots[i].impId, tmpInvalidBid);
+        bidmanager.addBidResponse(slots[i].impId, _invalidBidResponse(bids[i]));
       }
     };
   }
 
-  function _invalidBidResponse() {
-    var bidObject = bidfactory.createBid(2);
+  function _invalidBidResponse(bidRequest) {
+    var bidObject = bidfactory.createBid(CONSTANTS.STATUS.NO_BID, bidRequest);
     bidObject.bidderCode = _bidderCode;
     return bidObject;
   }
