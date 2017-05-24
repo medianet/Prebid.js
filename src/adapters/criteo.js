@@ -1,8 +1,9 @@
-var bidfactory = require('../bidfactory.js');
-var bidmanager = require('../bidmanager.js');
-var adloader = require('../adloader');
+const bidfactory = require('../bidfactory.js');
+const bidmanager = require('../bidmanager.js');
+const CONSTANTS = require('../constants.json');
+const adloader = require('../adloader');
 
-var CriteoAdapter = function CriteoAdapter() {
+const CriteoAdapter = function CriteoAdapter() {
   var _publisherTagUrl = window.location.protocol + '//static.criteo.net/js/ld/publishertag.js';
   var _bidderCode = 'criteo';
   var _profileId = 125;
