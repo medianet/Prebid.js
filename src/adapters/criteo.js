@@ -89,7 +89,7 @@ const CriteoAdapter = function CriteoAdapter() {
 
       for (var i = 0; i < slots.length; i++) {
         var bidResponse = null;
-        var bidRequest  = bids[i];
+        var bidRequest = bids[i];
 
         // look for the matching bid response
         for (var j = 0; j < jsonbidsResponse.slots.length; j++) {
