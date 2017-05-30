@@ -1,214 +1,191 @@
 const bidfactory = require('../bidfactory.js');
 const bidmanager = require('../bidmanager.js');
-const adloader   = require('../adloader');
-const CONSTANTS  = require('../constants.json');
-const utils      = require('../utils.js');
+const adloader = require('../adloader');
+const CONSTANTS = require('../constants.json');
+const utils = require('../utils.js');
 
 const ClickioAdapter = function ClickioAdapter() {
-    const BIDDER_CODE        = 'clickio';
-    let instanceCallbackName = BIDDER_CODE+utils.getUniqueIdentifierStr();
+  const BIDDER_CODE = 'clickio';
+  const prebidInstance = $$PREBID_GLOBAL$$;
 
-    let console = window['console'];
+  let idsCounters = {};
 
-    // utils.logWarn
-    // utils.logInfo
-    // utils.logMessage
-    // utils.logError
+  let generateResponseCallback = function (instanceCalbackName, bids) {
+    return function (response) {
+      utils.logInfo(BIDDER_CODE + ' server response:\n' + JSON.stringify(response, null, 4));
 
-    // utils.createInvisibleIframe
+      let adUnits = response.filter(responseItem => responseItem.id);
 
-    $$PREBID_GLOBAL$$[instanceCallbackName] = function (response) {
-        console.groupCollapsed('Clickio HB response');
-        console.log(response);
-        console.groupEnd();
+      if (!adUnits.length && response.length) {
+        utils.logInfo(BIDDER_CODE + ' no bids returned');
+      } else {
+        utils.logInfo(BIDDER_CODE + '\nbids returned:\n' + JSON.stringify(adUnits, null, 4));
+      }
 
-        let adUnits = response.filter(responseItem => responseItem.id);
+      for (let i = 0; i < bids.length; i++) {
+        let bid = bids[i];
+        let adUnit = null;
 
-        if (!adUnits) {
-            adUnits = [];
+        adUnit = adUnits.find(adUnit => adUnit.id == bid.params.fullSiteAreaId && !exists(adUnit.used));
+
+        if (!adUnit || !adUnit.cpm || !adUnit.ad) {
+          addBidResponse(null, bid);
+          continue;
         }
 
-        console.groupCollapsed('Clickio HB response adUnits');
-        console.log(adUnits);
-        console.groupEnd();
+        adUnit.used = true;
 
-        let bids = $$PREBID_GLOBAL$$._bidsRequested.find(bidSet => bidSet.bidderCode === BIDDER_CODE).bids;
+        addBidResponse(adUnit, bid);
+      }
 
-        for (let i = 0; i < bids.length; i++) {
-            let bid      = bids[i];
-            let adUnitId = null;
-            let adUnit   = null;
+      delete prebidInstance[instanceCalbackName];
 
-            // find the adunit in the response
-            /*for (let j = 0; j < adUnits.length; j++) {
-                adUnit = adUnits[j];
-                if (String(bid.params.unit) === String(adUnit.adunitid)
-                    && adUnitHasValidSizeFromBid(adUnit, bid) && !adUnit.used
-                ) {
-                    adUnitId = adUnit.adunitid;
-                    break;
-                }
-            }*/
+      return true;
+    }
+  };
 
-            adUnit = adUnits.find(adUnit => adUnit.id == bid.params.site_area_id);
+  function addBidResponse(adUnit, bid) {
+    let bidResponse = bidfactory.createBid(adUnit ? CONSTANTS.STATUS.GOOD : CONSTANTS.STATUS.NO_BID, bid);
+    bidResponse.bidderCode = BIDDER_CODE;
 
-            console.groupCollapsed('Clickio HB response matched bid/adUnit');
-            console.log(bid);
-            console.log(adUnit);
-
-            // no fill :(
-            if (!adUnit || !adUnit.cpm || !adUnit.ad) {
-                console.log('--- No fill ---');
-                console.groupEnd();
-
-                addBidResponse(null, bid);
-                continue;
-            }
-
-            console.log('--- Valid bid ---');
-            console.groupEnd();
-
-            adUnit.used = true;
-
-            addBidResponse(adUnit, bid);
-        }
-    };
-
-    function addBidResponse(adUnit, bid) {
-        let bidResponse        = bidfactory.createBid(adUnit ? CONSTANTS.STATUS.GOOD : CONSTANTS.STATUS.NO_BID, bid);
-        bidResponse.bidderCode = BIDDER_CODE;
-
-        if (adUnit) {
-            bidResponse.site_area_id = adUnit.id;
-            bidResponse.ad           = adUnit.ad;
-            bidResponse.cpm          = Number(adUnit.cpm);
-            bidResponse.width        = Number(adUnit.width);
-            bidResponse.height       = Number(adUnit.height);
-        }
-
-        bidmanager.addBidResponse(bid.placementCode, bidResponse);
+    if (adUnit) {
+      bidResponse.siteAreaId = adUnit.id;
+      bidResponse.fullSiteAreaId = bid.params.fullSiteAreaId;
+      bidResponse.ad = adUnit.ad;
+      bidResponse.cpm = Number(adUnit.cpm);
+      bidResponse.width = Number(adUnit.width);
+      bidResponse.height = Number(adUnit.height);
     }
 
-    function exists(variable) {
-        return typeof(variable) != 'undefined';
+    bidmanager.addBidResponse(bid.placementCode, bidResponse);
+  }
+
+  function exists(variable) {
+    return typeof (variable) !== 'undefined';
+  }
+
+  function attempt(valueFunction, defaultValue) {
+    defaultValue = defaultValue || null;
+
+    try {
+      return valueFunction();
+    } catch (ex) {
     }
 
-    function buildQueryStringFromParams(params) {
-        for (let key in params) {
-            if (params.hasOwnProperty(key)) {
-                if (!params[key]) {
-                    delete params[key];
-                } else {
-                    params[key] = encodeURIComponent(params[key]);
-                }
-            }
-        }
+    return defaultValue;
+  }
 
-        return utils._map(Object.keys(params), key => `${key}=${params[key]}`).join('&');
-    }
-
-    function adUnitHasValidSizeFromBid(adUnit, bid) {
-        let sizes         = utils.parseSizesInput(bid.sizes);
-        let sizeLength    = sizes && sizes.length || 0;
-        let found         = false;
-        let creative      = adUnit.creative && adUnit.creative[0];
-        let creative_size = String(creative.width)+'x'+String(creative.height);
-
-        if (utils.isArray(sizes)) {
-            for (let i = 0; i < sizeLength; i++) {
-                let size = sizes[i];
-                if (String(size) === String(creative_size)) {
-                    found = true;
-                    break;
-                }
-            }
-        }
-
-        return found;
-    }
-
-    function buildRequest(bids, params, biddingDomain) {
-        if (!utils.isArray(bids)) {
-            return;
-        }
-
-        let ids       = utils._map(bids, bid => bid['params']['site_area_id']).join(';');
-        params['szs'] = utils._map(bids, bid => {return utils.parseSizesInput(bid.sizes).join(',');}).join(';');
-
-        /*bids.forEach(function (bid) {
-            for (let customParam in bid.params.customParams) {
-                if (bid.params.customParams.hasOwnProperty(customParam)) {
-                    params["c."+customParam] = bid.params.customParams[customParam];
-                }
-            }
-        });*/
-
-        if (ids) {
-            let requestUrl = `//${biddingDomain}/hb/${ids}/?${buildQueryStringFromParams(params)}`;
-
-            console.groupCollapsed('Clickio HB request url');
-            console.log(requestUrl);
-            console.groupEnd();
-
-            adloader.loadScript(requestUrl);
+  function buildQueryStringFromParams(params) {
+    for (let key in params) {
+      if (params.hasOwnProperty(key)) {
+        if (!params[key]) {
+          delete params[key];
         } else {
-            console.log('Clickio HB no areas to bid');
+          params[key] = encodeURIComponent(params[key]);
         }
+      }
     }
 
-    function callBids(bidsObj) {
-        let isIfr,
-            bids = bidsObj.bids || [];
+    return utils._map(Object.keys(params), key => `${key}=${params[key]}`).join('&');
+  }
 
-        console.groupCollapsed('Clickio HB request');
-        console.log(bidsObj);
-        console.groupEnd();
+  function _callBids(bidsObj) {
+    let bids = bidsObj.bids || [];
 
-        /*try {
-            isIfr = window.self !== window.top;
-        } catch (e) {
-            isIfr = false;
-        }*/
-
-        if (bids.length === 0) {
-            return;
-        }
-
-        let currentURL = (window.parent !== window) ? document.referrer : window.location.href;
-        currentURL     = currentURL && encodeURIComponent(currentURL);
-
-        let biddingDomain = bids[0].params.bidsDomain;
-
-        let params = {
-            'rt': utils.getUniqueIdentifierStr(),
-            'r':  currentURL,
-            'f':  `$$PREBID_GLOBAL$$.${instanceCallbackName}`
-        };
-
-        if (window.parent === window
-            && document.getElementsByTagName("title").length
-        ) {
-            params["title"] = document.getElementsByTagName("title")[0].innerHTML.trim().substring(0, 256);
-        }
-
-        if ('https:' == window.location.protocol) {
-            params["https"] = 1;
-        }
-
-        if (exists(screen.width)) {
-            params["scr"] = screen.width+'x'+screen.height;
-        }
-
-        if (exists(window.innerWidth)) {
-            params["wnd"] = window.innerWidth+'x'+window.innerHeight;
-        }
-
-        buildRequest(bids, params, biddingDomain);
+    if (!utils.isArray(bids)) {
+      return;
     }
 
-    return {
-        callBids: callBids
+    utils.logInfo(BIDDER_CODE + ' adapter invoking');
+    utils.logInfo(BIDDER_CODE + '\nbids config:\n' + JSON.stringify(bids, null, 4));
+
+    if (bids.length === 0) {
+      utils.logWarn(BIDDER_CODE + ' adapter invoking without bids');
+      return;
+    }
+
+    let ids = utils._map(bids, function (bid) {
+      let areaId = bid.params.siteAreaId;
+
+      if (!areaId) {
+        return;
+      }
+
+      if (!exists(idsCounters[areaId])) {
+        idsCounters[areaId] = 1;
+      } else {
+        idsCounters[areaId]++;
+      }
+
+      let fullAreaId = areaId + (idsCounters[areaId] > 1 ? `.${idsCounters[areaId]}` : '');
+      bid.params.fullSiteAreaId = fullAreaId;
+      return fullAreaId;
+    }).filter(id => id).join(';');
+
+    if (!ids) {
+      utils.logError('Could not find siteAreaIds', BIDDER_CODE);
+      return;
+    }
+
+    let biddingDomain = bids[0].params.bidsDomain;
+    if (!biddingDomain) {
+      utils.logError('No bidding domain specified', BIDDER_CODE);
+      return;
+    }
+
+    let instanceId = utils.getUniqueIdentifierStr();
+    let instanceCalbackName = BIDDER_CODE + instanceId;
+
+    let params = {
+      rt: instanceId,
+      f: `$$PREBID_GLOBAL$$.${instanceCalbackName}`,
+      szs: utils._map(bids, bid => {
+        return utils.parseSizesInput(bid.sizes).join(',');
+      }).join(';')
     };
+
+    let title = attempt(function () {
+      return window.top.document.getElementsByTagName('title')[0].innerHTML.trim().substring(0, 256);
+    });
+    if (title) {
+      params.title = title;
+    }
+
+    let winLoc = utils.getTopWindowLocation();
+
+    let currentURL = attempt(function () {
+      return window.top !== window ? document.referrer : winLoc.href;
+    }, document.referrer);
+    if (currentURL) {
+      params.r = currentURL;
+    }
+
+    if (winLoc.protocol === 'https:') {
+      params.https = 1;
+    }
+
+    if (exists(screen.width)) {
+      params.scr = screen.width + 'x' + screen.height;
+    }
+
+    if (exists(window.innerWidth)) {
+      params.wnd = window.innerWidth + 'x' + window.innerHeight;
+    }
+
+    let requestUrl = `//${biddingDomain}/hb/${ids}/?${buildQueryStringFromParams(params)}`;
+
+    utils.logInfo(BIDDER_CODE + ' request url:\n' + requestUrl);
+
+    prebidInstance[instanceCalbackName] = generateResponseCallback(instanceCalbackName, bids);
+
+    adloader.loadScript(requestUrl);
+
+    return true;
+  }
+
+  return {
+    callBids: _callBids
+  };
 };
 
 module.exports = ClickioAdapter;
