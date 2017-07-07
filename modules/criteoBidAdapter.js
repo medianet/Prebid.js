@@ -2,6 +2,7 @@ var bidfactory = require('src/bidfactory.js');
 var bidmanager = require('src/bidmanager.js');
 var adloader = require('src/adloader');
 var adaptermanager = require('src/adaptermanager');
+const CONSTANTS = require('src/constants.json');
 
 var CriteoAdapter = function CriteoAdapter() {
   var sProt = (window.location.protocol === 'http:') ? 'http:' : 'https:';
