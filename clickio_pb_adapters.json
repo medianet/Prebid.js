@@ -1,11 +1,12 @@
 [
-    "pulsepoint",
-	"sekindoUM",
-	"appnexus",
-	"aol",
-	"sovrn",
-	"adform",
-	"clickio",
-	"districtmDMX",
-	"criteo"
+	"roxotAnalyticsAdapter",
+    "pulsepointBidAdapter",
+	"sekindoUMBidAdapter",
+	"appnexusBidAdapter",
+	"aolBidAdapter",
+	"sovrnBidAdapter",
+	"adformBidAdapter",
+	"clickioBidAdapter",
+	"districtmDMXBidAdapter",
+	"criteoBidAdapter"
 ]

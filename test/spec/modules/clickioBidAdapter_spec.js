@@ -1,11 +1,11 @@
 import {expect} from 'chai';
 
-import bidManager from '../../../src/bidmanager';
-import adLoader from '../../../src/adloader';
+import bidManager from 'src/bidmanager';
+import adLoader from 'src/adloader';
 import * as utils from 'src/utils';
-import CONSTANTS from '../../../src/constants.json';
+import CONSTANTS from 'src/constants.json';
 
-import ClickioAdapter from '../../../src/adapters/clickio';
+import ClickioAdapter from 'modules/clickioBidAdapter';
 
 describe('Clickio Adapter Tests', () => {
   let clikioAdapter;

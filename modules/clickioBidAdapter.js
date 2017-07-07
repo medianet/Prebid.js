@@ -1,10 +1,10 @@
-const bidfactory = require('../bidfactory.js');
-const bidmanager = require('../bidmanager.js');
-const adloader = require('../adloader');
-const CONSTANTS = require('../constants.json');
-const utils = require('../utils.js');
+const bidfactory = require('src/bidfactory.js');
+const bidmanager = require('src/bidmanager.js');
+const adloader = require('src/adloader');
+const CONSTANTS = require('src/constants.json');
+const utils = require('src/utils.js');
 
-const ClickioAdapter = function ClickioAdapter() {
+var ClickioAdapter = function ClickioAdapter() {
   const BIDDER_CODE = 'clickio';
   const prebidInstance = $$PREBID_GLOBAL$$;
 
@@ -187,5 +187,7 @@ const ClickioAdapter = function ClickioAdapter() {
     callBids: _callBids
   };
 };
+
+adaptermanager.registerBidAdapter(new ClickioAdapter(), 'clickio');
 
 module.exports = ClickioAdapter;
