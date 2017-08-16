@@ -3,6 +3,7 @@ var bidmanager = require('src/bidmanager.js');
 var adloader = require('src/adloader');
 var adaptermanager = require('src/adaptermanager');
 var utils = require('src/utils');
+const CONSTANTS = require('src/constants.json');
 
 var CriteoAdapter = function CriteoAdapter() {
   var sProt = (window.location.protocol === 'http:') ? 'http:' : 'https:';
@@ -72,9 +73,9 @@ var CriteoAdapter = function CriteoAdapter() {
         _profileId,
         new Criteo.PubTag.DirectBidding.DirectBiddingUrlBuilder(isAudit),
         slots,
-        _callbackSuccess(slots),
-        _callbackError(slots),
-        _callbackError(slots), // timeout handled as error
+        _callbackSuccess(slots, bids),
+        _callbackError(slots, bids),
+        _callbackError(slots, bids), // timeout handled as error
         undefined,
         networkid,
         integrationMode
@@ -99,7 +100,7 @@ var CriteoAdapter = function CriteoAdapter() {
     return jsonbidsResponse.slots === undefined;
   }
 
-  function _callbackSuccess(slots) {
+  function _callbackSuccess(slots, bids) {
     return function (bidsResponse) {
       var jsonbidsResponse = parseBidResponse(bidsResponse);
 
@@ -107,6 +108,7 @@ var CriteoAdapter = function CriteoAdapter() {
 
       for (var i = 0; i < slots.length; i++) {
         var bidResponse = null;
+        var bidRequest  = bids[i];
 
         // look for the matching bid response
         for (var j = 0; j < jsonbidsResponse.slots.length; j++) {
@@ -117,31 +119,32 @@ var CriteoAdapter = function CriteoAdapter() {
         }
 
         // register the bid response
-        let bidObject = _buildBidObject(bidResponse, slots[i]);
+        let bidObject = _buildBidObject(bidResponse, slots[i], bidRequest);
         bidmanager.addBidResponse(slots[i].impId, bidObject);
       }
     };
   }
 
-  function _callbackError(slots) {
+  function _callbackError(slots, bids) {
     return function () {
       for (var i = 0; i < slots.length; i++) {
-        bidmanager.addBidResponse(slots[i].impId, _invalidBidResponse());
+        var bidRequest = bids[i];
+        bidmanager.addBidResponse(slots[i].impId, _invalidBidResponse(bidRequest));
       }
     };
   }
 
-  function _invalidBidResponse() {
-    var bidObject = bidfactory.createBid(2);
+  function _invalidBidResponse(bidRequest) {
+    var bidObject = bidfactory.createBid(CONSTANTS.STATUS.NO_BID, bidRequest);
     bidObject.bidderCode = _bidderCode;
     return bidObject;
   }
 
-  function _buildBidObject(bidResponse, slot) {
+  function _buildBidObject(bidResponse, slot, bidRequest) {
     let bidObject;
     if (bidResponse) {
       // map the common fields
-      bidObject = bidfactory.createBid(1);
+      bidObject = bidfactory.createBid(CONSTANTS.STATUS.GOOD, bidRequest);
       bidObject.bidderCode = _bidderCode;
       bidObject.cpm = bidResponse.cpm;
 
@@ -177,7 +180,7 @@ var CriteoAdapter = function CriteoAdapter() {
         bidObject.ad = bidResponse.creative;
       }
     } else {
-      bidObject = _invalidBidResponse();
+      bidObject = _invalidBidResponse(bidRequest);
     }
     return bidObject;
   }
