@@ -2,6 +2,7 @@ var bidfactory = require('src/bidfactory.js');
 var bidmanager = require('src/bidmanager.js');
 var adLoader = require('src/adloader');
 var adaptermanager = require('src/adaptermanager');
+const CONSTANTS = require('src/constants.json');
 
 var DistrictmAdaptor = function districtmAdaptor() {
   let districtmUrl = window.location.protocol + '//prebid.districtm.ca/lib.js';
@@ -19,7 +20,7 @@ var DistrictmAdaptor = function districtmAdaptor() {
   this.handlerRes = function(response, bidObject) {
     let bid;
     if (parseFloat(response.result.cpm) > 0) {
-      bid = bidfactory.createBid(1);
+      bid = bidfactory.createBid(CONSTANTS.STATUS.GOOD, bidObject);
       bid.bidderCode = bidObject.bidder;
       bid.cpm = response.result.cpm;
       bid.width = response.result.width;
@@ -27,12 +28,10 @@ var DistrictmAdaptor = function districtmAdaptor() {
       bid.ad = response.result.banner;
       bidmanager.addBidResponse(bidObject.placementCode, bid);
     } else {
-      bid = bidfactory.createBid(2);
+      bid = bidfactory.createBid(CONSTANTS.STATUS.NO_BID, bidObject);
       bid.bidderCode = bidObject.bidder;
       bidmanager.addBidResponse(bidObject.placementCode, bid);
     }
-
-    bid.requestBidId = bidObject.bidId;
 
     return bid;
   };
