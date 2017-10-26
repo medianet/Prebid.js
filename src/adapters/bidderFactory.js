@@ -24,7 +24,7 @@ import { logWarn, logError, parseQueryStringParameters, delayExecution } from 's
  *   aliases: ['alias1', 'alias2'],
  *   supportedMediaTypes: ['video', 'native'],
  *   isBidRequestValid: function(paramsObject) { return true/false },
- *   buildRequests: function(bidRequests) { return some ServerRequest(s) },
+ *   buildRequests: function(bidRequests, bidderRequest) { return some ServerRequest(s) },
  *   interpretResponse: function(oneServerResponse) { return some Bids, or throw an error. }
  * });
  *
@@ -41,10 +41,10 @@ import { logWarn, logError, parseQueryStringParameters, delayExecution } from 's
  * @property {MediaType[]} [supportedMediaTypes]: A list of Media Types which the adapter supports.
  * @property {function(object): boolean} isBidRequestValid Determines whether or not the given bid has all the params
  *   needed to make a valid request.
- * @property {function(BidRequest[]): ServerRequest|ServerRequest[]} buildRequests Build the request to the Server
+ * @property {function(BidRequest[], bidderRequest): ServerRequest|ServerRequest[]} buildRequests Build the request to the Server
  *   which requests Bids for the given array of Requests. Each BidRequest in the argument array is guaranteed to have
  *   passed the isBidRequestValid() test.
- * @property {function(*, BidRequest): Bid[]} interpretResponse Given a successful response from the Server,
+ * @property {function(ServerResponse, BidRequest): Bid[]} interpretResponse Given a successful response from the Server,
  *   interpret it and return the Bid objects. This function will be run inside a try/catch.
  *   If it throws any errors, your bids will be discarded.
  * @property {function(SyncOptions, Array): UserSync[]} [getUserSyncs] Given an array of all the responses
@@ -66,19 +66,31 @@ import { logWarn, logError, parseQueryStringParameters, delayExecution } from 's
  * @property {('GET'|'POST')} method The type of request which this is.
  * @property {string} url The endpoint for the request. For example, "//bids.example.com".
  * @property {string|object} data Data to be sent in the request.
+ * @property {object} options Content-Type set in the header of the bid request, overrides default 'text/plain'.
  *   If this is a GET request, they'll become query params. If it's a POST request, they'll be added to the body.
  *   Strings will be added as-is. Objects will be unpacked into query params based on key/value mappings, or
  *   JSON-serialized into the Request body.
  */
 
 /**
+ * @typedef {object} ServerResponse
+ *
+ * @property {*} body The response body. If this is legal JSON, then it will be parsed. Otherwise it'll be a
+ *   string with the body's content.
+ * @property {{get: function(string): string} headers The response headers.
+ *   Call this like `ServerResponse.headers.get("Content-Type")`
+ */
+
+/**
  * @typedef {object} Bid
  *
  * @property {string} requestId The specific BidRequest which this bid is aimed at.
- *   This should correspond to one of the
+ *   This should match the BidRequest.bidId which this Bid targets.
  * @property {string} ad A URL which can be used to load this ad, if it's chosen by the publisher.
  * @property {string} currency The currency code for the cpm value
  * @property {number} cpm The bid price, in US cents per thousand impressions.
+ * @property {number} ttl Time-to-live - how long (in seconds) Prebid can use this bid.
+ * @property {boolean} netRevenue Boolean defining whether the bid is Net or Gross.  The default is true (Net).
  * @property {number} height The height of the ad, in pixels.
  * @property {number} width The width of the ad, in pixels.
  *
@@ -136,6 +148,9 @@ export function registerBidder(spec) {
  */
 export function newBidder(spec) {
   return Object.assign(new Adapter(spec.code), {
+    getSpec: function() {
+      return Object.freeze(spec);
+    },
     callBids: function(bidderRequest) {
       if (!Array.isArray(bidderRequest.bids)) {
         return;
@@ -152,16 +167,24 @@ export function newBidder(spec) {
       const adUnitCodesHandled = {};
       function addBidWithCode(adUnitCode, bid) {
         adUnitCodesHandled[adUnitCode] = true;
-        bidmanager.addBidResponse(adUnitCode, bid);
+        addBid(adUnitCode, bid);
       }
       function fillNoBids() {
         bidderRequest.bids
           .map(bidRequest => bidRequest.placementCode)
           .forEach(adUnitCode => {
             if (adUnitCode && !adUnitCodesHandled[adUnitCode]) {
-              bidmanager.addBidResponse(adUnitCode, newEmptyBid());
+              addBid(adUnitCode, newEmptyBid());
             }
           });
+      }
+
+      function addBid(code, bid) {
+        try {
+          bidmanager.addBidResponse(code, bid);
+        } catch (err) {
+          logError('Error adding bid', code, err);
+        }
       }
 
       // After all the responses have come back, fill up the "no bid" bids and
@@ -185,17 +208,17 @@ export function newBidder(spec) {
         }
       }
 
-      const bidRequests = bidderRequest.bids.filter(filterAndWarn);
-      if (bidRequests.length === 0) {
+      const validBidRequests = bidderRequest.bids.filter(filterAndWarn);
+      if (validBidRequests.length === 0) {
         afterAllResponses();
         return;
       }
       const bidRequestMap = {};
-      bidRequests.forEach(bid => {
+      validBidRequests.forEach(bid => {
         bidRequestMap[bid.bidId] = bid;
       });
 
-      let requests = spec.buildRequests(bidRequests, bidderRequest);
+      let requests = spec.buildRequests(validBidRequests, bidderRequest);
       if (!requests || requests.length === 0) {
         afterAllResponses();
         return;
@@ -220,10 +243,10 @@ export function newBidder(spec) {
                 error: onFailure
               },
               undefined,
-              {
+              Object.assign({
                 method: 'GET',
                 withCredentials: true
-              }
+              }, request.options)
             );
             break;
           case 'POST':
@@ -234,11 +257,11 @@ export function newBidder(spec) {
                 error: onFailure
               },
               typeof request.data === 'string' ? request.data : JSON.stringify(request.data),
-              {
+              Object.assign({
                 method: 'POST',
                 contentType: 'text/plain',
                 withCredentials: true
-              }
+              }, request.options)
             );
             break;
           default:
@@ -249,10 +272,16 @@ export function newBidder(spec) {
         // If the server responds successfully, use the adapter code to unpack the Bids from it.
         // If the adapter code fails, no bids should be added. After all the bids have been added, make
         // sure to call the `onResponse` function so that we're one step closer to calling fillNoBids().
-        function onSuccess(response) {
+        function onSuccess(response, responseObj) {
           try {
             response = JSON.parse(response);
           } catch (e) { /* response might not be JSON... that's ok. */ }
+
+          // Make response headers available for #1742. These are lazy-loaded because most adapters won't need them.
+          response = {
+            body: response,
+            headers: headerParser(responseObj)
+          };
           responses.push(response);
 
           let bids;
@@ -281,6 +310,12 @@ export function newBidder(spec) {
             } else {
               logWarn(`Bidder ${spec.code} made bid for unknown request ID: ${bid.requestId}. Ignoring.`);
             }
+          }
+
+          function headerParser(xmlHttpResponse) {
+            return {
+              get: responseObj.getResponseHeader.bind(responseObj)
+            };
           }
         }
 
