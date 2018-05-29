@@ -10,7 +10,7 @@
     "BD_SETTING_STANDARD": "standard"
   },
   "REPO_AND_VERSION": "%%REPO_AND_VERSION%%",
-  "DEBUG_MODE": "pbjs_debug",
+  "DEBUG_MODE": "lxpbjs_debug",
   "STATUS": {
     "GOOD": 1,
     "NO_BID": 2

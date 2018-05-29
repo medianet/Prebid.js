@@ -215,6 +215,10 @@ export function newConfig() {
       return;
     }
 
+    // window.console.groupCollapsed('setConfig call');
+    // window.console.log(options);
+    // window.console.groupEnd();
+
     let topics = Object.keys(options);
     let topicalConfig = {};
 
@@ -227,6 +231,8 @@ export function newConfig() {
 
       topicalConfig[topic] = config[topic] = option;
     });
+
+    // window.console.log('config.debug: '+!!this.getConfig('debug'));
 
     callSubscribers(topicalConfig);
   });

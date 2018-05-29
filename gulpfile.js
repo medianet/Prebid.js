@@ -31,6 +31,9 @@ var fs = require('fs');
 var jsEscape = require('gulp-js-escape');
 
 var prebid = require('./package.json');
+
+prebid.globalVarName = argv.globalVarName ? argv.globalVarName : prebid.globalVarName;
+
 var dateString = 'Updated : ' + (new Date()).toISOString().substring(0, 10);
 var banner = '/* <%= prebid.name %> v<%= prebid.version %>\n' + dateString + ' */\n';
 var analyticsDirectory = '../analytics';

@@ -293,6 +293,8 @@ function hasConsoleError() {
 exports.hasConsoleLogger = hasConsoleLogger;
 
 var debugTurnedOn = function () {
+  // window.console.log('debugTurnedOn call: '+ !!config.getConfig('debug'));
+
   if (config.getConfig('debug') === false && _loggingChecked === false) {
     const debug = getParameterByName(CONSTANTS.DEBUG_MODE).toUpperCase() === 'TRUE';
     config.setConfig({ debug });
