@@ -1,12 +1,11 @@
 [
-	"roxotAnalyticsAdapter",
-    "pulsepointBidAdapter",
-	"sekindoUMBidAdapter",
-	"appnexusBidAdapter",
-	"aolBidAdapter",
-	"sovrnBidAdapter",
+	"consentManagement",
+
 	"adformBidAdapter",
-	"clickioBidAdapter",
-	"districtmDMXBidAdapter",
-	"criteoBidAdapter"
+	"aolBidAdapter",
+	"appnexusBidAdapter",
+	"criteoBidAdapter",
+	"pulsepointBidAdapter",
+	"smartadserverBidAdapter",
+	"sovrnBidAdapter"
 ]
