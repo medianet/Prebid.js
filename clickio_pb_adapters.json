@@ -4,6 +4,7 @@
 	"adformBidAdapter",
 	"aolBidAdapter",
 	"appnexusBidAdapter",
+	"betweenBidAdapter",
 	"criteoBidAdapter",
 	"pulsepointBidAdapter",
 	"smartadserverBidAdapter",
