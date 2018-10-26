@@ -8,5 +8,6 @@
 	"criteoBidAdapter",
 	"pulsepointBidAdapter",
 	"smartadserverBidAdapter",
-	"sovrnBidAdapter"
+	"sovrnBidAdapter",
+	"teadsBidAdapter"
 ]
