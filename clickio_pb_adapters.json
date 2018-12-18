@@ -6,6 +6,7 @@
 	"appnexusBidAdapter",
 	"betweenBidAdapter",
 	"criteoBidAdapter",
+	"pubmaticBidAdapter",
 	"pulsepointBidAdapter",
 	"smartadserverBidAdapter",
 	"sovrnBidAdapter",
