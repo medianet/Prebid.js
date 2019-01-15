@@ -8,6 +8,7 @@
 	"criteoBidAdapter",
 	"pubmaticBidAdapter",
 	"pulsepointBidAdapter",
+	"rubiconBidAdapter",
 	"smartadserverBidAdapter",
 	"sovrnBidAdapter",
 	"teadsBidAdapter"
