@@ -1,11 +1,11 @@
 [
-	"consentManagement",
-
-	"adformBidAdapter",
-	"aolBidAdapter",
+	"admixerBidAdapter",
 	"appnexusBidAdapter",
 	"betweenBidAdapter",
+	"consentManagement",
 	"criteoBidAdapter",
+	"mytargetBidAdapter",
+	"otmBidAdapter",
 	"pubmaticBidAdapter",
 	"pulsepointBidAdapter",
 	"rubiconBidAdapter",

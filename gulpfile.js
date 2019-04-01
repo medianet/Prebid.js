@@ -166,7 +166,9 @@ function makeWebpackPkg() {
 }
 
 function gulpBundle(dev) {
-  return bundle(dev).pipe(gulp.dest('build/' + (dev ? 'dev' : 'dist')));
+    return bundle(dev)
+      .pipe(gulp.dest('build/' + (dev ? 'dev' : 'dist')))
+      .pipe(gulp.dest('../Medianet/client_js'));
 }
 
 function nodeBundle(modules) {
