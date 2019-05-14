@@ -4,6 +4,7 @@
 	"betweenBidAdapter",
 	"consentManagement",
 	"criteoBidAdapter",
+	"ixBidAdapter",
 	"mytargetBidAdapter",
 	"otmBidAdapter",
 	"pubmaticBidAdapter",
