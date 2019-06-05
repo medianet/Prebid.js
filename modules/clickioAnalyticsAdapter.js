@@ -53,7 +53,7 @@ const endpointUrl = 'https://clickiocdn.com/utr/hb_stat/';
 //   cl(object);
 //   cge();
 // };
-//
+
 var clickioAnalyticsAdapter = Object.assign(adapter({
     endpointUrl,
     analyticsType
@@ -472,7 +472,6 @@ var clickioAnalyticsAdapter = Object.assign(adapter({
         //         "hb_bidder_appnexus": "appnexus"
         //     }
         // }
-
 
         // Clickio Analytics Call (auctionEnd)
         // {
@@ -1118,16 +1117,28 @@ var clickioAnalyticsAdapter = Object.assign(adapter({
         //     ]
         // }
 
+        // if (eventType === CONSTANTS.EVENTS.BID_RESPONSE) {
+        //     cgcj('Clickio Analytics Call ('+eventType+': '+args.bidderCode+': '+args.cpm+')', args);
+        // }
 
         if (eventType === CONSTANTS.EVENTS.BID_WON) {
             try {
+                let cpmValue = args.cpm;
+
+                if (window.clickioCpmCache
+                    && typeof window.clickioCpmCache[args.adId] != 'undefined'
+                ) {
+                    cpmValue = window.clickioCpmCache[args.adId];
+                    delete window.clickioCpmCache[args.adId];
+                }
+
                 ajax(
                     clickioAnalyticsAdapter.context.host,
                     null, // callback
                     {
                         adunit: args.adUnitCode,
                         bidder: args.bidderCode,
-                        bid: args.cpm
+                        bid: cpmValue
                     },
                     {
                         method: 'GET',

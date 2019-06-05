@@ -1,4 +1,6 @@
 [
+	"clickioAnalyticsAdapter",
+
 	"admixerBidAdapter",
 	"appnexusBidAdapter",
 	"betweenBidAdapter",
