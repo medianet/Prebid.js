@@ -1,6 +1,4 @@
 [
-	"clickioAnalyticsAdapter",
-
 	"admixerBidAdapter",
 	"appnexusBidAdapter",
 	"betweenBidAdapter",
@@ -8,6 +6,7 @@
 	"criteoBidAdapter",
 	"ixBidAdapter",
 	"mytargetBidAdapter",
+	"openxBidAdapter",
 	"otmBidAdapter",
 	"pubmaticBidAdapter",
 	"pulsepointBidAdapter",
