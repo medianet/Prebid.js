@@ -6,8 +6,69 @@ import * as utils from '../src/utils';
 const CONSTANTS = require('../src/constants.json');
 
 const analyticsType = 'endpoint';
-const endpointUrl = 'https://clickiocdn.com/utr/hb_stat/';
+const endpointUrl = 'https://clickiocdn.com/utr/hb_stat_new/';
 
+function EventsQueue() {
+  let queue = [];
+
+  this.push = (event) => {
+    if (event instanceof Array) {
+      queue.push.apply(queue, event);
+    } else {
+      queue.push(event);
+    }
+  };
+
+  this.popAll = () => {
+    let result = queue;
+    queue = [];
+    return result;
+  };
+}
+
+function processEventsQue (context) {
+  let receivedEvents = context.queue.popAll();
+  let grouppedEvents = {};
+
+  receivedEvents.forEach(event => {
+    if (!grouppedEvents[event.bdr]) {
+      grouppedEvents[event.bdr] = {};
+    }
+
+    if (!grouppedEvents[event.bdr][event.adu]) {
+      grouppedEvents[event.bdr][event.adu] = {
+        bdr: event.bdr,
+        adu: event.adu
+      };
+    }
+
+    let aduEvent = grouppedEvents[event.bdr][event.adu];
+
+    let attrs = ['imp', 'bid', 'req', 'res', 'tim', 'won'];
+    attrs.forEach(attr => {
+      if (typeof event[attr] !== 'undefined') {
+        if (typeof aduEvent[attr] === 'undefined') {
+          aduEvent[attr] = event[attr];
+        } else {
+          aduEvent[attr] += event[attr];
+        }
+      }
+    });
+  });
+
+  Object.keys(grouppedEvents).forEach(function (eventBdr) {
+    Object.keys(grouppedEvents[eventBdr]).forEach(function (eventAdu) {
+      try {
+        ajax(context.host, null, // callback
+          grouppedEvents[eventBdr][eventAdu],
+          {method: 'GET', contentType: 'application/x-www-form-urlencoded'}
+        );
+      } catch (err) {
+        utils.logError('Clickio Analytics: Error on send data: ', err);
+      }
+    });
+  });
+}
 // var cl = function (data) {
 //     console['log'](data);
 // };
@@ -54,11 +115,16 @@ const endpointUrl = 'https://clickiocdn.com/utr/hb_stat/';
 //   cge();
 // };
 
-var clickioAnalyticsAdapter = Object.assign(adapter({
+let clickioAnalyticsAdapter = Object.assign(adapter({
     endpointUrl,
     analyticsType
 }), {
     track({eventType, args}) {
+      if (!clickioAnalyticsAdapter.context) {
+        return;
+      }
+
+/*
         // if (eventType == CONSTANTS.EVENTS.BIDDER_DONE
         //     || eventType == CONSTANTS.EVENTS.BID_ADJUSTMENT
         // ) {
@@ -1121,33 +1187,53 @@ var clickioAnalyticsAdapter = Object.assign(adapter({
         //     cgcj('Clickio Analytics Call ('+eventType+': '+args.bidderCode+': '+args.cpm+')', args);
         // }
 
-        if (eventType === CONSTANTS.EVENTS.BID_WON) {
-            try {
-                let cpmValue = args.cpm;
+    // "BID_TIMEOUT": "bidTimeout",
+    // "BID_REQUESTED": "bidRequested",
+    // "BID_RESPONSE": "bidResponse",
+    // "BID_WON": "bidWon",
+*/
 
-                if (window.clickioCpmCache
-                    && typeof window.clickioCpmCache[args.adId] != 'undefined'
-                ) {
-                    cpmValue = window.clickioCpmCache[args.adId];
-                    delete window.clickioCpmCache[args.adId];
-                }
+        if (eventType === CONSTANTS.EVENTS.BID_REQUESTED
+            ||eventType === CONSTANTS.EVENTS.BID_TIMEOUT
+            ||eventType === CONSTANTS.EVENTS.BID_RESPONSE
+            ||eventType === CONSTANTS.EVENTS.BID_WON
+        ) {
+          let queueEvent = {
+            // PK
+            adu: args.adUnitCode,
+            bdr: args.bidderCode
+          };
 
-                ajax(
-                    clickioAnalyticsAdapter.context.host,
-                    null, // callback
-                    {
-                        adunit: args.adUnitCode,
-                        bidder: args.bidderCode,
-                        bid: cpmValue
-                    },
-                    {
-                        method: 'GET',
-                        contentType: 'application/x-www-form-urlencoded'
-                    },
-                );
-            } catch (err) {
-                utils.logError('Clickio Analytics: Error on send data: ', err);
+          if (eventType === CONSTANTS.EVENTS.BID_RESPONSE) {
+            queueEvent.res = 1;
+          } else if (eventType === CONSTANTS.EVENTS.BID_TIMEOUT) {
+            queueEvent.tim = 1;
+          } else if (eventType === CONSTANTS.EVENTS.BID_REQUESTED) {
+            queueEvent.req = 1;
+          } else if (eventType === CONSTANTS.EVENTS.BID_WON) {
+            // bid rendered
+            let cpmValue = args.cpm;
+
+            if (window.clickioCpmCache
+                && typeof window.clickioCpmCache[args.adId] != 'undefined'
+            ) {
+              cpmValue = window.clickioCpmCache[args.adId];
+              delete window.clickioCpmCache[args.adId];
             }
+
+            queueEvent.bid = cpmValue;
+            queueEvent.imp = 1;
+            queueEvent.won = 1;
+          }
+
+          clickioAnalyticsAdapter.context.queue.push(queueEvent);
+
+          if (!clickioAnalyticsAdapter.context.timer) {
+            setTimeout(function(){
+              clickioAnalyticsAdapter.context.timer = null;
+              processEventsQue(clickioAnalyticsAdapter.context)
+            }, 3000);
+          }
         }
     }
 });
@@ -1161,7 +1247,8 @@ clickioAnalyticsAdapter.enableAnalytics = function (config) {
     // }
 
     clickioAnalyticsAdapter.context = {
-        events: [],
+        queue: new EventsQueue(),
+        timer: null,
         host: config.options.host || endpointUrl
     };
 
