@@ -9,7 +9,7 @@ import CONSTANTS from '../constants.json';
 import events from '../events';
 import includes from 'core-js/library/fn/array/includes';
 import { ajax } from '../ajax';
-import { logWarn, logError, parseQueryStringParameters, delayExecution, parseSizesInput, getBidderRequest, flatten, uniques, timestamp, setDataInLocalStorage, getDataFromLocalStorage, deepAccess } from '../utils';
+import { logWarn, logError, parseQueryStringParameters, delayExecution, parseSizesInput, getBidderRequest, flatten, uniques, timestamp, setDataInLocalStorage, getDataFromLocalStorage, deepAccess, isArray } from '../utils';
 import { ADPOD } from '../mediaTypes';
 import { getHook } from '../hook';
 
@@ -168,7 +168,7 @@ export function newBidder(spec) {
       return Object.freeze(spec);
     },
     registerSyncs,
-    callBids: function(bidderRequest, addBidResponse, done, ajax) {
+    callBids: function(bidderRequest, addBidResponse, done, ajax, onTimelyResponse, configEnabledCallback) {
       if (!Array.isArray(bidderRequest.bids)) {
         return;
       }
@@ -187,7 +187,7 @@ export function newBidder(spec) {
       function afterAllResponses() {
         done();
         events.emit(CONSTANTS.EVENTS.BIDDER_DONE, bidderRequest);
-        registerSyncs(responses, bidderRequest.gdprConsent);
+        registerSyncs(responses, bidderRequest.gdprConsent, bidderRequest.uspConsent);
       }
 
       const validBidRequests = bidderRequest.bids.filter(filterAndWarn);
@@ -216,7 +216,7 @@ export function newBidder(spec) {
       // Callbacks don't compose as nicely as Promises. We should call done() once _all_ the
       // Server requests have returned and been processed. Since `ajax` accepts a single callback,
       // we need to rig up a function which only executes after all the requests have been responded.
-      const onResponse = delayExecution(afterAllResponses, requests.length)
+      const onResponse = delayExecution(configEnabledCallback(afterAllResponses), requests.length)
       requests.forEach(processRequest);
 
       function formatGetParameters(data) {
@@ -233,7 +233,7 @@ export function newBidder(spec) {
             ajax(
               `${request.url}${formatGetParameters(request.data)}`,
               {
-                success: onSuccess,
+                success: configEnabledCallback(onSuccess),
                 error: onFailure
               },
               undefined,
@@ -247,7 +247,7 @@ export function newBidder(spec) {
             ajax(
               request.url,
               {
-                success: onSuccess,
+                success: configEnabledCallback(onSuccess),
                 error: onFailure
               },
               typeof request.data === 'string' ? request.data : JSON.stringify(request.data),
@@ -267,6 +267,8 @@ export function newBidder(spec) {
         // If the adapter code fails, no bids should be added. After all the bids have been added, make
         // sure to call the `onResponse` function so that we're one step closer to calling done().
         function onSuccess(response, responseObj) {
+          onTimelyResponse(spec.code);
+
           try {
             response = JSON.parse(response);
           } catch (e) { /* response might not be JSON... that's ok. */ }
@@ -288,7 +290,7 @@ export function newBidder(spec) {
           }
 
           if (bids) {
-            if (bids.forEach) {
+            if (isArray(bids)) {
               bids.forEach(addBidUsingRequestMap);
             } else {
               addBidUsingRequestMap(bids);
@@ -299,6 +301,9 @@ export function newBidder(spec) {
           function addBidUsingRequestMap(bid) {
             const bidRequest = bidRequestMap[bid.requestId];
             if (bidRequest) {
+              // creating a copy of original values as cpm and currency are modified later
+              bid.originalCpm = bid.cpm;
+              bid.originalCurrency = bid.currency;
               const prebidBid = Object.assign(createBid(CONSTANTS.STATUS.GOOD, bidRequest), bid);
               addBidWithCode(bidRequest.adUnitCode, prebidBid);
             } else {
@@ -316,6 +321,8 @@ export function newBidder(spec) {
         // If the server responds with an error, there's not much we can do. Log it, and make sure to
         // call onResponse() so that we're one step closer to calling done().
         function onFailure(err) {
+          onTimelyResponse(spec.code);
+
           logError(`Server call for ${spec.code} failed: ${err}. Continuing without bids.`);
           onResponse();
         }
@@ -323,13 +330,13 @@ export function newBidder(spec) {
     }
   });
 
-  function registerSyncs(responses, gdprConsent) {
-    if (spec.getUserSyncs) {
+  function registerSyncs(responses, gdprConsent, uspConsent) {
+    if (spec.getUserSyncs && !adapterManager.aliasRegistry[spec.code]) {
       let filterConfig = config.getConfig('userSync.filterSettings');
       let syncs = spec.getUserSyncs({
-        iframeEnabled: !!(config.getConfig('userSync.iframeEnabled') || (filterConfig && (filterConfig.iframe || filterConfig.all))),
-        pixelEnabled: !!(config.getConfig('userSync.pixelEnabled') || (filterConfig && (filterConfig.image || filterConfig.all))),
-      }, responses, gdprConsent);
+        iframeEnabled: !!(filterConfig && (filterConfig.iframe || filterConfig.all)),
+        pixelEnabled: !!(filterConfig && (filterConfig.image || filterConfig.all)),
+      }, responses, gdprConsent, uspConsent);
       if (syncs) {
         if (!Array.isArray(syncs)) {
           syncs = [syncs];

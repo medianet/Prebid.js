@@ -1,7 +1,7 @@
 import {registerBidder} from '../src/adapters/bidderFactory';
 const utils = require('../src/utils');
 const BIDDER_CODE = 'teads';
-const ENDPOINT_URL = '//a.teads.tv/hb/bid-request';
+const ENDPOINT_URL = 'https://a.teads.tv/hb/bid-request';
 const gdprStatus = {
   GDPR_APPLIES_PUBLISHER: 12,
   GDPR_APPLIES_GLOBAL: 11,
@@ -40,10 +40,15 @@ export const spec = {
   buildRequests: function(validBidRequests, bidderRequest) {
     const bids = validBidRequests.map(buildRequestObject);
     const payload = {
-      referrer: utils.getTopWindowUrl(),
+      referrer: getReferrerInfo(bidderRequest),
       data: bids,
-      deviceWidth: screen.width
+      deviceWidth: screen.width,
+      hb_version: '$prebid.version$'
     };
+
+    if (validBidRequests[0].schain) {
+      payload.schain = validBidRequests[0].schain;
+    }
 
     let gdpr = bidderRequest.gdprConsent;
     if (bidderRequest && gdpr) {
@@ -54,6 +59,10 @@ export const spec = {
         consent: isConsentString ? gdpr.consentString : '',
         status: status
       };
+    }
+
+    if (bidderRequest && bidderRequest.uspConsent) {
+      payload.us_privacy = bidderRequest.uspConsent
     }
 
     const payloadString = JSON.stringify(payload);
@@ -84,7 +93,8 @@ export const spec = {
           ttl: bid.ttl,
           ad: bid.ad,
           requestId: bid.bidId,
-          creativeId: bid.creativeId
+          creativeId: bid.creativeId,
+          placementId: bid.placementId
         };
         bidResponses.push(bidResponse);
       });
@@ -92,15 +102,41 @@ export const spec = {
     return bidResponses;
   },
 
-  getUserSyncs: function(syncOptions, responses, gdprApplies) {
+  getUserSyncs: function(syncOptions, responses, gdprConsent) {
+    let queryParams = {
+      hb_provider: 'prebid',
+      hb_version: '$prebid.version$'
+    };
+
+    if (gdprConsent) {
+      let gdprIab = {
+        status: findGdprStatus(gdprConsent.gdprApplies, gdprConsent.vendorData),
+        consent: gdprConsent.consentString
+      };
+
+      queryParams.gdprIab = JSON.stringify(gdprIab)
+    }
+
+    if (utils.deepAccess(responses[0], 'body.responses.0.placementId')) {
+      queryParams.placementId = responses[0].body.responses[0].placementId
+    };
+
     if (syncOptions.iframeEnabled) {
       return [{
         type: 'iframe',
-        url: '//sync.teads.tv/iframe'
+        url: 'https://sync.teads.tv/iframe?' + utils.parseQueryStringParameters(queryParams)
       }];
     }
   }
 };
+
+function getReferrerInfo(bidderRequest) {
+  let ref = '';
+  if (bidderRequest && bidderRequest.refererInfo && bidderRequest.refererInfo.referer) {
+    ref = bidderRequest.refererInfo.referer;
+  }
+  return ref;
+}
 
 function findGdprStatus(gdprApplies, gdprData) {
   let status = gdprStatus.GDPR_APPLIES_PUBLISHER;

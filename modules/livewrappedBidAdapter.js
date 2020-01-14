@@ -4,7 +4,7 @@ import { config } from '../src/config';
 import find from 'core-js/library/fn/array/find';
 
 const BIDDER_CODE = 'livewrapped';
-export const URL = '//lwadm.com/ad';
+export const URL = 'https://lwadm.com/ad';
 const VERSION = '1.1';
 
 export const spec = {
@@ -24,6 +24,7 @@ export const spec = {
    * seats:       List of bidders and seats           Optional. {"bidder name": ["seat 1", "seat 2"], ...}
    * deviceId:    Device id if available              Optional.
    * ifa:         Advertising ID                      Optional.
+   * options      Dynamic data                        Optional. Optional data to send into adapter.
    *
    * @param {BidRequest} bid The bid params to validate.
    * @return boolean True if this is a valid bid, and false otherwise.
@@ -51,7 +52,7 @@ export const spec = {
     const ifa = find(bidRequests, hasIfaParam);
     const tid = find(bidRequests, hasTidParam);
     bidUrl = bidUrl ? bidUrl.params.bidUrl : URL;
-    url = url ? url.params.url : (config.getConfig('pageUrl') || utils.getTopWindowUrl());
+    url = url ? url.params.url : getTopWindowLocation(bidderRequest);
     test = test ? test.params.test : undefined;
     var adRequests = bidRequests.map(bidToAdRequest);
 
@@ -69,7 +70,9 @@ export const spec = {
       gdprApplies: bidderRequest.gdprConsent ? bidderRequest.gdprConsent.gdprApplies : undefined,
       gdprConsent: bidderRequest.gdprConsent ? bidderRequest.gdprConsent.consentString : undefined,
       cookieSupport: !utils.isSafariBrowser() && utils.cookiesAreEnabled(),
-      adRequests: [...adRequests]
+      rcv: getAdblockerRecovered(),
+      adRequests: [...adRequests],
+      rtbData: handleEids(bidRequests)
     };
     const payloadString = JSON.stringify(payload);
     return {
@@ -99,7 +102,8 @@ export const spec = {
         ttl: ad.ttl,
         creativeId: ad.creativeId,
         netRevenue: true,
-        currency: serverResponse.body.currency
+        currency: serverResponse.body.currency,
+        meta: ad.meta
       };
 
       bidResponses.push(bidResponse);
@@ -178,7 +182,8 @@ function bidToAdRequest(bid) {
     callerAdUnitId: bid.params.adUnitName || bid.adUnitCode || bid.placementCode,
     bidId: bid.bidId,
     transactionId: bid.transactionId,
-    formats: bid.sizes.map(sizeToFormat)
+    formats: bid.sizes.map(sizeToFormat),
+    options: bid.params.options
   };
 }
 
@@ -187,6 +192,49 @@ function sizeToFormat(size) {
     width: size[0],
     height: size[1]
   }
+}
+
+function getAdblockerRecovered() {
+  try {
+    return utils.getWindowTop().I12C && utils.getWindowTop().I12C.Morph === 1;
+  } catch (e) {}
+}
+
+function AddExternalUserId(eids, value, source, atype, rtiPartner) {
+  if (utils.isStr(value)) {
+    var eid = {
+      source,
+      uids: [{
+        id: value,
+        atype
+      }]
+    };
+
+    if (rtiPartner) {
+      eid.uids[0] = {ext: {rtiPartner}};
+    }
+
+    eids.push(eid);
+  }
+}
+
+function handleEids(bidRequests) {
+  let eids = [];
+  const bidRequest = bidRequests[0];
+  if (bidRequest && bidRequest.userId) {
+    AddExternalUserId(eids, utils.deepAccess(bidRequest, `userId.pubcid`), 'pubcommon', 1); // Also add this to eids
+    AddExternalUserId(eids, utils.deepAccess(bidRequest, `userId.id5id`), 'id5-sync.com', 1);
+  }
+  if (eids.length > 0) {
+    return {user: {ext: {eids}}};
+  }
+
+  return undefined;
+}
+
+function getTopWindowLocation(bidderRequest) {
+  let url = bidderRequest && bidderRequest.refererInfo && bidderRequest.refererInfo.referer;
+  return config.getConfig('pageUrl') || url;
 }
 
 registerBidder(spec);

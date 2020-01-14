@@ -4,7 +4,7 @@ import { registerBidder } from '../src/adapters/bidderFactory';
 import { VIDEO, BANNER, NATIVE } from '../src/mediaTypes';
 
 const BIDDER_CODE = 'aja';
-const URL = '//ad.as.amanad.adtdp.com/v2/prebid';
+const URL = 'https://ad.as.amanad.adtdp.com/v2/prebid';
 const SDK_TYPE = 5;
 const AD_TYPE = {
   BANNER: 1,
@@ -30,6 +30,10 @@ export const spec = {
       queryString = utils.tryAppendQueryString(queryString, 'skt', SDK_TYPE);
       queryString = utils.tryAppendQueryString(queryString, 'prebid_id', bid.bidId);
       queryString = utils.tryAppendQueryString(queryString, 'prebid_ver', '$prebid.version$');
+
+      if (bidderRequest && bidderRequest.refererInfo) {
+        queryString = utils.tryAppendQueryString(queryString, 'page_url', bidderRequest.refererInfo.referer);
+      }
 
       bidRequests.push({
         method: 'GET',
