@@ -1,10 +1,13 @@
 [
+	"clickioAnalyticsAdapter",
+
 	"admixerBidAdapter",
 	"appnexusBidAdapter",
 	"betweenBidAdapter",
 	"consentManagement",
 	"criteoBidAdapter",
 	"ixBidAdapter",
+	"mgidBidAdapter",
 	"mytargetBidAdapter",
 	"openxBidAdapter",
 	"otmBidAdapter",
