@@ -103,6 +103,8 @@
     "dset": "2.0.1",
     "express": "^4.15.4",
     "fun-hooks": "^0.9.5",
+    "gulp-file": "^0.4.0",
+    "gulp-wrap": "^0.15.0",
     "jsencrypt": "^3.0.0-rc.1",
     "just-clone": "^1.0.2"
   }

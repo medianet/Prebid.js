@@ -22,6 +22,7 @@ var shell = require('gulp-shell');
 var eslint = require('gulp-eslint');
 var gulpif = require('gulp-if');
 var gulpfile = require('gulp-file');
+var wrap = require('gulp-wrap');
 var sourcemaps = require('gulp-sourcemaps');
 var through = require('through2');
 var fs = require('fs');
@@ -207,6 +208,7 @@ function bundle(dev, moduleArr) {
     entries
   )
     .pipe(gulpif(dev, sourcemaps.init({loadMaps: true})))
+    .pipe(wrap('/*<%= file.relative %>*/<%= contents %>'))
     .pipe(concat(outputFileName))
     .pipe(gulpif(!argv.manualEnable, footer('\n<%= global %>.processQueue();', {
       global: prebid.globalVarName
