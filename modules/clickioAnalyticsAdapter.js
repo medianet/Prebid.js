@@ -1198,6 +1198,29 @@ let clickioAnalyticsAdapter = Object.assign(adapter({
             ||eventType === CONSTANTS.EVENTS.BID_RESPONSE
             ||eventType === CONSTANTS.EVENTS.BID_WON
         ) {
+          if (eventType === CONSTANTS.EVENTS.BID_REQUESTED
+          ) {
+            // TODO: по-хорошему нужно отправлять пачкой
+            args.bids.forEach(bid => {
+              let trackerParams = {
+                "cmp": (args.gdprConsent && args.gdprConsent.vendorData) ? args.gdprConsent.vendorData.cmpId : null,
+                "adu": bid.adUnitCode,
+                "bdr": bid.bidder,
+                "req": 1
+              };
+
+              ajax(
+                '//clickiocdn.com/utr/cmps/',
+                null, // callback
+                trackerParams,
+                {
+                  method:      'GET',
+                  contentType: 'application/x-www-form-urlencoded'
+                }
+              );
+            });
+          }
+
           let queueEvent = {
             // PK
             adu: args.adUnitCode,
