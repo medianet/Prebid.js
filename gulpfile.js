@@ -160,7 +160,7 @@ function makeWebpackPkg() {
 function gulpBundle(dev) {
     return bundle(dev)
       .pipe(gulp.dest('build/' + (dev ? 'dev' : 'dist')))
-      .pipe(gulp.dest('../Medianet/client_js'));
+      .pipe(gulp.dest('../Medianet/client_js/bundles'));
 }
 
 function nodeBundle(modules) {

@@ -1,4 +1,5 @@
 [
+	"schain",
 	"admixerBidAdapter",
 	"appnexusBidAdapter",
 	"betweenBidAdapter",
