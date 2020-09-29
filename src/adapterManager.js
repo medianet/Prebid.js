@@ -360,32 +360,43 @@ adapterManager.callBids = (adUnits, bidRequests, addBidResponse, doneCb, request
     // window.console.groupCollapsed(`${bidRequest.bidderCode} call`);
     // window.console.groupCollapsed('adUnits & bidRequests');
     // window.console.log(adUnits);
-    // window.console.log(bidRequests);
+    // window.console.log(clientBidRequests);
+    // window.console.groupCollapsed('json');
     // window.console.log(JSON.stringify(adUnits, null, 4));
-    // window.console.log(JSON.stringify(bidRequests, null, 4));
+    // window.console.log(JSON.stringify(clientBidRequests, null, 4));
+    // window.console.groupEnd();
     // window.console.groupEnd();
 
-    bidRequests.forEach(bidRequest => {
-        bidRequest.bids.forEach(bidRequestBid => {
-            adUnits.forEach(adUnit => {
-                if (adUnit.code == bidRequestBid.adUnitCode) {
-
-                    adUnit.bids.forEach(adUnitBid => {
-                      if (adUnitBid.bidder == bidRequest.bidderCode
-                          && typeof adUnitBid.__sds_id__ !== 'undefined'
-                          && JSON.stringify(adUnitBid.params) == JSON.stringify(bidRequestBid.params)
-                          && JSON.stringify(adUnitBid.__sds_id__) == JSON.stringify(bidRequestBid.__sds_id__)
-                      ) {
-                        adUnitBid.bidId = bidRequestBid.bidId;
-                        return false;
-                      }
-                    });
-
-                    return false;
-                }
-            });
-        });
-    });
+  // clientBidRequests.forEach(bidRequest => {
+  //       bidRequest.bids.forEach(bidRequestBid => {
+  //           adUnits.forEach(adUnit => {
+  //               if (adUnit.code == bidRequestBid.adUnitCode) {
+  //
+  //                   adUnit.bids.forEach(adUnitBid => {
+  //                     if (adUnitBid.bidder == bidRequest.bidderCode
+  //                         && typeof adUnitBid.__sds_id__ !== 'undefined'
+  //                         && JSON.stringify(adUnitBid.params) == JSON.stringify(bidRequestBid.params)
+  //                         && JSON.stringify(adUnitBid.__sds_id__) == JSON.stringify(bidRequestBid.__sds_id__)
+  //                     ) {
+  //                       // window.console.groupCollapsed('matched adUnit & bidRequest');
+  //                       // window.console.log(adUnitBid);
+  //                       // window.console.log(bidRequestBid);
+  //                       // window.console.groupCollapsed('json');
+  //                       // window.console.log(JSON.stringify(adUnitBid, null, 4));
+  //                       // window.console.log(JSON.stringify(bidRequestBid, null, 4));
+  //                       // window.console.groupEnd();
+  //                       // window.console.groupEnd();
+  //
+  //                       adUnitBid.bidId = bidRequestBid.bidId;
+  //                       return false;
+  //                     }
+  //                   });
+  //
+  //                   return false;
+  //               }
+  //           });
+  //       });
+  //   });
 
     // handle client adapter requests
   clientBidRequests.forEach(bidRequest => {

@@ -502,6 +502,11 @@ function getPreparedBidForAuction({adUnitCode, bid, bidderRequest, auctionId}) {
 
   bidObject.timeToRespond = bidObject.responseTimestamp - bidObject.requestTimestamp;
 
+  const bidReq = bidderRequest.bids && find(bidderRequest.bids, bidReq => (bidReq.adUnitCode == adUnitCode && bidReq.bidId == bid.requestId));
+
+  // bidObject.bidId = bidReq.bidId;
+  bidObject.__sds_id__ = bidReq.__sds_id__;
+
   // Let listeners know that now is the time to adjust the bid, if they want to.
   //
   // CAREFUL: Publishers rely on certain bid properties to be available (like cpm),
@@ -509,7 +514,6 @@ function getPreparedBidForAuction({adUnitCode, bid, bidderRequest, auctionId}) {
   events.emit(CONSTANTS.EVENTS.BID_ADJUSTMENT, bidObject);
 
   // a publisher-defined renderer can be used to render bids
-  const bidReq = bidderRequest.bids && find(bidderRequest.bids, bid => bid.adUnitCode == adUnitCode);
   const adUnitRenderer = bidReq && bidReq.renderer;
 
   if (adUnitRenderer && adUnitRenderer.url && !(adUnitRenderer.backupOnly && isBoolean(adUnitRenderer.backupOnly) && bid.renderer)) {
@@ -530,6 +534,29 @@ function getPreparedBidForAuction({adUnitCode, bid, bidderRequest, auctionId}) {
   bidObject.pbAg = priceStringsObj.auto;
   bidObject.pbDg = priceStringsObj.dense;
   bidObject.pbCg = priceStringsObj.custom;
+
+  // window.console.groupCollapsed('getPreparedBidForAuction ('+bid.bidderCode+')');
+  //   window.console.groupCollapsed('adUnitCode');
+  //   window.console.log(adUnitCode);
+  //   window.console.groupEnd();
+  //
+  //   window.console.groupCollapsed('bid');
+  //   window.console.log(bid);
+  //   window.console.groupEnd();
+  //
+  //   window.console.groupCollapsed('bidReq');
+  //   window.console.log(bidReq);
+  //   window.console.groupEnd();
+  //
+  //   window.console.groupCollapsed('bidderRequest');
+  //   window.console.log(bidderRequest);
+  //   window.console.groupEnd();
+  //
+  //   window.console.groupCollapsed('bidObject');
+  //   window.console.log(bidObject);
+  //   window.console.groupEnd();
+  //
+  // window.console.groupEnd();
 
   return bidObject;
 }
