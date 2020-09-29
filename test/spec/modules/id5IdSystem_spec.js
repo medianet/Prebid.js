@@ -14,7 +14,7 @@ describe('ID5 ID System', function() {
   const ID5_PARTNER = 173;
   const ID5_ENDPOINT = `https://id5-sync.com/g/v2/${ID5_PARTNER}.json`;
   const ID5_COOKIE_NAME = 'id5idcookie';
-  const ID5_NB_COOKIE_NAME = `pbjs-id5id-${ID5_PARTNER}-nb`;
+  const ID5_NB_COOKIE_NAME = `id5id.1st_${ID5_PARTNER}_nb`;
   const ID5_EXPIRED_COOKIE_DATE = 'Thu, 01 Jan 1970 00:00:01 GMT';
   const ID5_STORED_ID = 'storedid5id';
   const ID5_STORED_SIGNATURE = '123456';
@@ -50,7 +50,9 @@ describe('ID5 ID System', function() {
     return {
       name: ID5_MODULE_NAME,
       value: {
-        id5id: value
+        id5id: {
+          uid: value
+        }
       }
     }
   }
@@ -238,10 +240,13 @@ describe('ID5 ID System', function() {
         adUnits.forEach(unit => {
           unit.bids.forEach(bid => {
             expect(bid).to.have.deep.nested.property(`userId.${ID5_EIDS_NAME}`);
-            expect(bid.userId.id5id).to.equal(ID5_STORED_ID);
+            expect(bid.userId.id5id.uid).to.equal(ID5_STORED_ID);
             expect(bid.userIdAsEids[0]).to.deep.equal({
               source: ID5_SOURCE,
-              uids: [{ id: ID5_STORED_ID, atype: 1 }]
+              uids: [{ id: ID5_STORED_ID, atype: 1 }],
+              ext: {
+                linkType: 0
+              }
             });
           });
         });
@@ -258,7 +263,7 @@ describe('ID5 ID System', function() {
         adUnits.forEach(unit => {
           unit.bids.forEach(bid => {
             expect(bid).to.have.deep.nested.property(`userId.${ID5_EIDS_NAME}`);
-            expect(bid.userId.id5id).to.equal(ID5_STORED_ID);
+            expect(bid.userId.id5id.uid).to.equal(ID5_STORED_ID);
             expect(bid.userIdAsEids[0]).to.deep.equal({
               source: ID5_SOURCE,
               uids: [{ id: ID5_STORED_ID, atype: 1 }]
@@ -368,13 +373,13 @@ describe('ID5 ID System', function() {
   });
 
   describe('Decode stored object', function() {
-    const decodedObject = { 'id5id': ID5_STORED_ID };
+    const expectedDecodedObject = { id5id: { uid: ID5_STORED_ID, ext: { linkType: 0 } } };
 
     it('should properly decode from a stored object', function() {
-      expect(id5IdSubmodule.decode(ID5_STORED_OBJ)).to.deep.equal(decodedObject);
+      expect(id5IdSubmodule.decode(ID5_STORED_OBJ)).to.deep.equal(expectedDecodedObject);
     });
     it('should properly decode from a legacy stored object', function() {
-      expect(id5IdSubmodule.decode(ID5_LEGACY_STORED_OBJ)).to.deep.equal(decodedObject);
+      expect(id5IdSubmodule.decode(ID5_LEGACY_STORED_OBJ)).to.deep.equal(expectedDecodedObject);
     });
     it('should return undefined if passed a string', function() {
       expect(id5IdSubmodule.decode('somestring')).to.eq(undefined);
