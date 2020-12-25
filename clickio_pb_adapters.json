@@ -12,7 +12,9 @@
 	"otmBidAdapter",
 	"pubmaticBidAdapter",
 	"pulsepointBidAdapter",
+	"rtbhouseBidAdapter",
 	"rubiconBidAdapter",
+	"segmentoBidAdapter",
 	"smartadserverBidAdapter",
 	"sovrnBidAdapter",
 	"teadsBidAdapter"
