@@ -20,5 +20,6 @@
 	"teadsBidAdapter",
 	"oguryBidAdapter",
 	"adriverBidAdapter",
-	"tripleliftBidAdapter"
+	"tripleliftBidAdapter",
+	"yahoosspBidAdapter"
 ]
