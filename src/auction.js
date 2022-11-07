@@ -542,6 +542,9 @@ function getPreparedBidForAuction({adUnitCode, bid, auctionId}, {index = auction
 
   bidObject.timeToRespond = bidObject.responseTimestamp - bidObject.requestTimestamp;
 
+  const bidReq         = bidderRequest && bidderRequest.bids && find(bidderRequest.bids, bid => bid.adUnitCode == adUnitCode && bid.bidId == bidObject.requestId);
+  bidObject.__sds_id__ = bidReq.__sds_id__;
+
   // Let listeners know that now is the time to adjust the bid, if they want to.
   //
   // CAREFUL: Publishers rely on certain bid properties to be available (like cpm),
@@ -549,15 +552,6 @@ function getPreparedBidForAuction({adUnitCode, bid, auctionId}, {index = auction
   events.emit(CONSTANTS.EVENTS.BID_ADJUSTMENT, bidObject);
 
   // a publisher-defined renderer can be used to render bids
-
-  //// const adUnitObject = index.getAdUnit(bidObject);
-  //// bidObject.__sds_id__ = adUnitObject.__sds_id__;
-
-  const bidReq = bidderRequest && bidderRequest.bids && find(bidderRequest.bids, bid => bid.adUnitCode == adUnitCode && bid.bidId == bidObject.requestId);
-  // bidObject.bidId = bidReq.bidId;
-  bidObject.__sds_id__ = bidReq.__sds_id__;
-
-  //// const adUnitRenderer = adUnitObject.renderer;
   const adUnitRenderer = index.getAdUnit(bidObject).renderer;
 
   // a publisher can also define a renderer for a mediaType
