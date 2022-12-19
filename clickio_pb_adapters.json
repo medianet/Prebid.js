@@ -22,5 +22,6 @@
 	"adriverBidAdapter",
 	"tripleliftBidAdapter",
 	"yahoosspBidAdapter",
-	"improvedigitalBidAdapter"
+	"improvedigitalBidAdapter",
+	"onetagBidAdapter"
 ]
