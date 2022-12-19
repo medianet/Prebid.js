@@ -23,5 +23,6 @@
 	"tripleliftBidAdapter",
 	"yahoosspBidAdapter",
 	"improvedigitalBidAdapter",
-	"onetagBidAdapter"
+	"onetagBidAdapter",
+	"medianetBidAdapter"
 ]
