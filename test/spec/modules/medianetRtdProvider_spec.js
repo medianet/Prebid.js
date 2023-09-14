@@ -70,12 +70,12 @@ describe('medianet realtime module', function () {
   describe('getTargeting should work correctly', function () {
     it('should return empty if not loaded', function () {
       window.mnjs.loaded = false;
-      assert.deepEqual(medianetRTD.medianetRtdModule.getTargetingData([]), {});
+      assert.deepEqual(medianetRTD.medianetRtdModule.getTargetingData([], {}, {}, {}), {});
     });
 
     it('should return ad unit codes when ad units are present', function () {
       const adUnitCodes = ['code1', 'code2'];
-      assert.deepEqual(medianetRTD.medianetRtdModule.getTargetingData(adUnitCodes), {
+      assert.deepEqual(medianetRTD.medianetRtdModule.getTargetingData(adUnitCodes, {}, {}, {}), {
         code1: {'mnadc': 'code1'},
         code2: {'mnadc': 'code2'},
       });
@@ -83,7 +83,7 @@ describe('medianet realtime module', function () {
 
     it('should call mnjs.getTargetingData if loaded', function () {
       window.mnjs.loaded = true;
-      medianetRTD.medianetRtdModule.getTargetingData([]);
+      medianetRTD.medianetRtdModule.getTargetingData([], {}, {}, {});
       assert.equal(getTargetingDataSpy.called, true);
     });
   });
