@@ -704,8 +704,7 @@ function addCommonResponseProperties(bidResponse, adUnitCode, {index = auctionMa
 
   bidResponse.timeToRespond = bidResponse.responseTimestamp - bidResponse.requestTimestamp;
 
-  // TODO: поправить
-  const bidReq           = bidderRequest && bidderRequest.bids && find(bidderRequest.bids, bid => bid.adUnitCode == adUnitCode && bid.bidId == bidResponse.requestId);
+  const bidReq           = bidderRequest && bidderRequest.bids && find(bidderRequest.bids, bidResponse => bidResponse.adUnitCode == adUnitCode && bidResponse.bidId == bidResponse.requestId);
   bidResponse.__sds_id__ = bidReq.__sds_id__;
 }
 
@@ -758,7 +757,6 @@ function getPreparedBidForAuction(bid, {index = auctionManager.index} = {}) {
   bid.pbDg = priceStringsObj.dense;
   bid.pbCg = priceStringsObj.custom;
 
-  // TODO: поправить (+ проверить?)
   // window.console.groupCollapsed('getPreparedBidForAuction ('+bid.bidderCode+')');
   //   window.console.groupCollapsed('adUnitCode');
   //   window.console.log(bid.adUnitCode);
