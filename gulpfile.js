@@ -28,12 +28,13 @@ const execa = require('execa');
 const {minify} = require('terser');
 const Vinyl = require('vinyl');
 
-prebid.globalVarName = argv.globalVarName ? argv.globalVarName : prebid.globalVarName;
-
 var dateString = 'Updated : '+(new Date()).toISOString().substring(0, 10);
 var banner     = '/* <%= prebid.name %> v<%= prebid.version %>\n'+dateString+'*/\n';
 
 var prebid = require('./package.json');
+
+prebid.globalVarName = argv.globalVarName ? argv.globalVarName : prebid.globalVarName;
+
 var port = 9999;
 const INTEG_SERVER_HOST = argv.host ? argv.host : 'localhost';
 const INTEG_SERVER_PORT = 4444;
