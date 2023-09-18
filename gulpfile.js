@@ -17,8 +17,6 @@ var replace = require('gulp-replace');
 var shell = require('gulp-shell');
 var eslint = require('gulp-eslint');
 var gulpif = require('gulp-if');
-var gulpfile = require('gulp-file');
-var wrap = require('gulp-wrap');
 var sourcemaps = require('gulp-sourcemaps');
 var through = require('through2');
 var fs = require('fs');
@@ -27,9 +25,6 @@ const path = require('path');
 const execa = require('execa');
 const {minify} = require('terser');
 const Vinyl = require('vinyl');
-
-var dateString = 'Updated : '+(new Date()).toISOString().substring(0, 10);
-var banner     = '/* <%= prebid.name %> v<%= prebid.version %>\n'+dateString+'*/\n';
 
 var prebid = require('./package.json');
 
@@ -166,16 +161,6 @@ function makeWebpackPkg(extraConfig = {}) {
   }
 }
 
-function addBanner() {
-  const sm = argv.sourceMaps;
-
-  return gulp.src(['build/dist/prebid-core.js'])
-             .pipe(gulpif(sm, sourcemaps.init({loadMaps: true})))
-             .pipe(header(banner, {prebid}))
-             .pipe(gulpif(sm, sourcemaps.write('.')))
-             .pipe(gulp.dest('build/dist'))
-}
-
 function getModulesListToAddInBanner(modules) {
   if (!modules || modules.length === helpers.getModuleNames().length) {
     return 'All available modules for this version.'
@@ -185,9 +170,9 @@ function getModulesListToAddInBanner(modules) {
 }
 
 function gulpBundle(dev) {
-    return bundle(dev)
-      .pipe(gulp.dest('build/' + (dev ? 'dev' : 'dist')))
-      .pipe(gulp.dest('../Medianet/client_js/bundles'));
+  return bundle(dev)
+    .pipe(gulp.dest('build/' + (dev ? 'dev' : 'dist')))
+    .pipe(gulp.dest('../Medianet/client_js/bundles'));
 }
 
 function nodeBundle(modules, dev = false) {
@@ -282,7 +267,9 @@ function bundle(dev, moduleArr) {
   gutil.log('Generating bundle:', outputFileName);
 
   var notCore = function (file) {
-    if (file.relative !== 'prebid-core.js') {
+    var ignoreFileList = ['prebid-core.js', 'prebid-header.js', 'prebid-footer.js'];
+
+    if (ignoreFileList.indexOf(file.relative.replace(/^\.\.\\/g, '')) === -1) {
       return true;
     }
   };
@@ -290,12 +277,18 @@ function bundle(dev, moduleArr) {
   const wrap = wrapWithHeaderAndFooter(dev, modules);
   return wrap(gulp.src(entries))
     .pipe(gulpif(sm, sourcemaps.init({ loadMaps: true })))
-    .pipe(gulpif(notCore, wrap('/*<%= file.relative %>*/<%= contents %>')))
+    .pipe(gulpif(notCore, through.obj(function(file, _, cb) {
+      if (file.isBuffer()) {
+        let fileNameComment = '/* ' + file.relative + ' */';
+        file.contents = Buffer.concat([
+          Buffer.from(fileNameComment),
+          file.contents
+        ]);
+      }
+      this.push(file);
+      cb();
+    })))
     .pipe(concat(outputFileName))
-    .pipe(gulpif(!argv.manualEnable, footer('\n<%= global %>.processQueue();', {
-      global: prebid.globalVarName
-    }
-    )))
     .pipe(gulpif(sm, sourcemaps.write('.')));
 }
 
@@ -458,7 +451,7 @@ gulp.task(clean);
 gulp.task(escapePostbidConfig);
 
 gulp.task('build-bundle-dev', gulp.series(makeDevpackPkg, gulpBundle.bind(null, true)));
-gulp.task('build-bundle-prod', gulp.series(makeWebpackPkg(), addBanner, gulpBundle.bind(null, false)));
+gulp.task('build-bundle-prod', gulp.series(makeWebpackPkg(), gulpBundle.bind(null, false)));
 // build-bundle-verbose - prod bundle except names and comments are preserved. Use this to see the effects
 // of dead code elimination.
 gulp.task('build-bundle-verbose', gulp.series(makeWebpackPkg({
