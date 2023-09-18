@@ -279,7 +279,7 @@ function bundle(dev, moduleArr) {
     .pipe(gulpif(sm, sourcemaps.init({ loadMaps: true })))
     .pipe(gulpif(notCore, through.obj(function(file, _, cb) {
       if (file.isBuffer()) {
-        let fileNameComment = '/* ' + file.relative + ' */';
+        let fileNameComment = '/*' + file.relative + '*/';
         file.contents = Buffer.concat([
           Buffer.from(fileNameComment),
           file.contents
