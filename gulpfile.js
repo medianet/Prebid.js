@@ -269,7 +269,7 @@ function bundle(dev, moduleArr) {
   var notCore = function (file) {
     var ignoreFileList = ['prebid-core.js', 'prebid-header.js', 'prebid-footer.js'];
 
-    if (ignoreFileList.indexOf(file.relative.replace(/^\.\.\\/g, '')) === -1) {
+    if (file && ignoreFileList.indexOf(file.relative.replace(/^\.\.\\/g, '')) === -1) {
       return true;
     }
   };
@@ -277,6 +277,7 @@ function bundle(dev, moduleArr) {
   const wrap = wrapWithHeaderAndFooter(dev, modules);
   return wrap(gulp.src(entries))
     .pipe(gulpif(sm, sourcemaps.init({ loadMaps: true })))
+    .pipe(gulpif(!notCore(), replace(/\/\*[\s\S]*?\@license[\s\S]*?\*\//g, '')))
     .pipe(gulpif(notCore, through.obj(function(file, _, cb) {
       if (file.isBuffer()) {
         let fileNameComment = '/*' + file.relative + '*/';

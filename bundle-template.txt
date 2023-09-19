@@ -1,6 +1,5 @@
 /* <%= prebid.name %> v<%= prebid.version %>
-Updated: <%= (new Date()).toISOString().substring(0, 10) %>
-Modules: <%= modules %> */
+Updated: <%= (new Date()).toISOString().substring(0, 10) %>*/
 
 if (!window.<%= prebid.globalVarName %> || !window.<%= prebid.globalVarName %>.libLoaded) {
  $$PREBID_SOURCE$$
