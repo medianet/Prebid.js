@@ -277,7 +277,7 @@ function bundle(dev, moduleArr) {
   const wrap = wrapWithHeaderAndFooter(dev, modules);
   return wrap(gulp.src(entries))
     .pipe(gulpif(sm, sourcemaps.init({ loadMaps: true })))
-    .pipe(gulpif(!notCore(), replace(/\/\*[\s\S]*?\@license[\s\S]*?\*\//g, '')))
+    .pipe(replace(/\/\*[\s\S]*?\@license[\s\S]*?\*\//g, ''))
     .pipe(gulpif(notCore, through.obj(function(file, _, cb) {
       if (file.isBuffer()) {
         let fileNameComment = '/*' + file.relative + '*/';
