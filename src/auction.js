@@ -702,9 +702,24 @@ function addCommonResponseProperties(bidResponse, adUnitCode, {index = auctionMa
     bidResponse.ttlBuffer = adUnit.ttlBuffer;
   }
 
+  // window.console.groupCollapsed('addCommonResponseProperties (' + bidResponse.bidder + ')');
+  //   window.console.groupCollapsed('adUnitCode');
+  //   window.console.log(adUnitCode);
+  //   window.console.groupEnd();
+  //
+  //   window.console.groupCollapsed('bidderRequest');
+  //   window.console.log(bidderRequest);
+  //   window.console.groupEnd();
+  //
+  //   window.console.groupCollapsed('bidResponse');
+  //   window.console.log(bidResponse);
+  //   window.console.groupEnd();
+  //
+  // window.console.groupEnd();
+
   bidResponse.timeToRespond = bidResponse.responseTimestamp - bidResponse.requestTimestamp;
 
-  const bidReq           = bidderRequest && bidderRequest.bids && find(bidderRequest.bids, bidResponse => bidResponse.adUnitCode == adUnitCode && bidResponse.bidId == bidResponse.requestId);
+  const bidReq           = bidderRequest && bidderRequest.bids && find(bidderRequest.bids, bid => bid.adUnitCode == adUnitCode && bid.bidId == bidResponse.requestId);
   bidResponse.__sds_id__ = bidReq.__sds_id__;
 }
 
@@ -756,21 +771,6 @@ function getPreparedBidForAuction(bid, {index = auctionManager.index} = {}) {
   bid.pbAg = priceStringsObj.auto;
   bid.pbDg = priceStringsObj.dense;
   bid.pbCg = priceStringsObj.custom;
-
-  // window.console.groupCollapsed('getPreparedBidForAuction ('+bid.bidderCode+')');
-  //   window.console.groupCollapsed('adUnitCode');
-  //   window.console.log(bid.adUnitCode);
-  //   window.console.groupEnd();
-  //
-  //   window.console.groupCollapsed('bidObject');
-  //   window.console.log(bid);
-  //   window.console.groupEnd();
-  //
-  //   window.console.groupCollapsed('bidderRequest');
-  //   window.console.log(index.getBidderRequest(bid));
-  //   window.console.groupEnd();
-  //
-  // window.console.groupEnd();
 
   return bid;
 }
