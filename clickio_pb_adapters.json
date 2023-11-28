@@ -25,5 +25,6 @@
 	"improvedigitalBidAdapter",
 	"onetagBidAdapter",
 	"medianetBidAdapter",
-    "seedtagBidAdapter"
+    "seedtagBidAdapter",
+    "outbrainBidAdapter"
 ]
