@@ -1,10 +1,16 @@
 [
 	"schain",
+	"userId",
+	"consentManagement",
+
+	"sharedIdSystem",
+	"id5IdSystem",
+	"criteoIdSystem",
+
 	"admixerBidAdapter",
 	"amxBidAdapter",
 	"appnexusBidAdapter",
 	"betweenBidAdapter",
-	"consentManagement",
 	"criteoBidAdapter",
 	"ixBidAdapter",
 	"mgidBidAdapter",
