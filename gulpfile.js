@@ -242,7 +242,7 @@ function getModulesListToAddInBanner(modules) {
 function gulpBundle(dev) {
   return bundle(dev)
     .pipe(gulp.dest('build/' + (dev ? 'dev' : 'dist')))
-    .pipe(gulp.dest('../Medianet/client_js/bundles'));
+    .pipe(gulp.dest('../client-js/bundles'));
 }
 
 function nodeBundle(modules, dev = false) {
