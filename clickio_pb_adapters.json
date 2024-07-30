@@ -1,7 +1,7 @@
 [
 	"schain",
 	"userId",
-	"consentManagement",
+	"consentManagementTcf",
 
 	"sharedIdSystem",
 	"id5IdSystem",
@@ -28,7 +28,7 @@
 	"oguryBidAdapter",
 	"adriverBidAdapter",
 	"tripleliftBidAdapter",
-	"yahoosspBidAdapter",
+	"yahooAdsBidAdapter",
 	"improvedigitalBidAdapter",
 	"onetagBidAdapter",
 	"medianetBidAdapter",
