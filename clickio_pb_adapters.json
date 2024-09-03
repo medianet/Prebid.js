@@ -34,5 +34,6 @@
 	"medianetBidAdapter",
     "seedtagBidAdapter",
     "outbrainBidAdapter",
-    "richaudienceBidAdapter"
+    "richaudienceBidAdapter",
+    "sharethroughBidAdapter"
 ]
