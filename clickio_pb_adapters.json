@@ -8,6 +8,8 @@
 	"criteoIdSystem",
 
 	"adagioBidAdapter",
+	"rtdModule",
+	"adagioRtdProvider",
 	"admixerBidAdapter",
 	"amxBidAdapter",
 	"appnexusBidAdapter",
