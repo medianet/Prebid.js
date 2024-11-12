@@ -7,9 +7,10 @@
 	"id5IdSystem",
 	"criteoIdSystem",
 
-	"adagioBidAdapter",
-	"rtdModule",
-	"adagioRtdProvider",
+    "rtdModule",
+    "adagioRtdProvider",
+
+    "adagioBidAdapter",
 	"admixerBidAdapter",
 	"amxBidAdapter",
 	"appnexusBidAdapter",
