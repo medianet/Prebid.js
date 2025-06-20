@@ -22,7 +22,6 @@ import {Renderer} from '../src/Renderer.js';
 import {config} from '../src/config.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import {ADPOD, BANNER, NATIVE, VIDEO} from '../src/mediaTypes.js';
-import {find, includes} from '../src/polyfill.js';
 import {INSTREAM, OUTSTREAM} from '../src/video.js';
 import {getStorageManager} from '../src/storageManager.js';
 import {bidderSettings} from '../src/bidderSettings.js';
@@ -156,14 +155,14 @@ export const spec = {
     bidRequests = convertOrtbRequestToProprietaryNative(bidRequests);
 
     const tags = bidRequests.map(bidToTag);
-    const userObjBid = find(bidRequests, hasUserInfo);
+    const userObjBid = ((bidRequests) || []).find(hasUserInfo);
     let userObj = {};
     if (config.getConfig('coppa') === true) {
       userObj = { 'coppa': true };
     }
     if (userObjBid) {
       Object.keys(userObjBid.params.user)
-        .filter(param => includes(USER_PARAMS, param))
+        .filter(param => USER_PARAMS.includes(param))
         .forEach((param) => {
           let uparam = convertCamelToUnderscore(param);
           if (param === 'segments' && isArray(userObjBid.params.user[param])) {
@@ -182,16 +181,16 @@ export const spec = {
         });
     }
 
-    const appDeviceObjBid = find(bidRequests, hasAppDeviceInfo);
+    const appDeviceObjBid = ((bidRequests) || []).find(hasAppDeviceInfo);
     let appDeviceObj;
     if (appDeviceObjBid && appDeviceObjBid.params && appDeviceObjBid.params.app) {
       appDeviceObj = {};
       Object.keys(appDeviceObjBid.params.app)
-        .filter(param => includes(APP_DEVICE_PARAMS, param))
+        .filter(param => APP_DEVICE_PARAMS.includes(param))
         .forEach(param => appDeviceObj[param] = appDeviceObjBid.params.app[param]);
     }
 
-    const appIdObjBid = find(bidRequests, hasAppId);
+    const appIdObjBid = ((bidRequests) || []).find(hasAppId);
     let appIdObj;
     if (appIdObjBid && appIdObjBid.params && appDeviceObjBid.params.app && appDeviceObjBid.params.app.id) {
       appIdObj = {
@@ -223,7 +222,7 @@ export const spec = {
         'debug_timeout': 'number'
       }, debugObj);
 
-      const debugBidRequest = find(bidRequests, hasDebug);
+      const debugBidRequest = ((bidRequests) || []).find(hasDebug);
       if (debugBidRequest && debugBidRequest.debug) {
         debugObj = debugBidRequest.debug;
       }
@@ -231,16 +230,16 @@ export const spec = {
 
     if (debugObj && debugObj.enabled) {
       Object.keys(debugObj)
-        .filter(param => includes(DEBUG_PARAMS, param))
+        .filter(param => DEBUG_PARAMS.includes(param))
         .forEach(param => {
           debugObjParams[param] = debugObj[param];
         });
     }
 
-    const memberIdBid = find(bidRequests, hasMemberId);
+    const memberIdBid = ((bidRequests) || []).find(hasMemberId);
     const member = memberIdBid ? parseInt(memberIdBid.params.member, 10) : 0;
     const schain = bidRequests[0].schain;
-    const omidSupport = find(bidRequests, hasOmidSupport);
+    const omidSupport = ((bidRequests) || []).find(hasOmidSupport);
 
     const payload = {
       tags: [...tags],
@@ -341,7 +340,7 @@ export const spec = {
     }
 
     if (FEATURES.VIDEO) {
-      const hasAdPodBid = find(bidRequests, hasAdPod);
+      const hasAdPodBid = ((bidRequests) || []).find(hasAdPod);
       if (hasAdPodBid) {
         bidRequests.filter(hasAdPod).forEach(adPodBid => {
           const adPodTags = createAdPodRequest(tags, adPodBid);
@@ -352,7 +351,7 @@ export const spec = {
       }
     }
 
-    if (bidRequests[0].userId) {
+    if (bidRequests[0].userIdAsEids?.length > 0) {
       let eids = [];
       bidRequests[0].userIdAsEids.forEach(eid => {
         if (!eid || !eid.uids || eid.uids.length < 1) { return; }
@@ -366,6 +365,7 @@ export const spec = {
           eids.push(tmp);
         });
       });
+
       if (eids.length) {
         payload.eids = eids;
       }
@@ -424,7 +424,7 @@ export const spec = {
         const rtbBid = getRtbBid(serverBid);
         if (rtbBid) {
           const cpmCheck = (bidderSettings.get(bidderRequest.bidderCode, 'allowZeroCpmBids') === true) ? rtbBid.cpm >= 0 : rtbBid.cpm > 0;
-          if (cpmCheck && includes(this.supportedMediaTypes, rtbBid.ad_type)) {
+          if (cpmCheck && this.supportedMediaTypes.includes(rtbBid.ad_type)) {
             const bid = newBid(serverBid, rtbBid, bidderRequest);
             bid.mediaType = parseMediaType(rtbBid);
             bids.push(bid);
@@ -452,16 +452,20 @@ export const spec = {
   },
 
   getUserSyncs: function (syncOptions, responses, gdprConsent, uspConsent, gppConsent) {
-    function checkGppStatus(gppConsent) {
-      // user sync suppression for adapters is handled in activity controls and not needed in adapters
-      return true;
-    }
-
-    if (syncOptions.iframeEnabled && hasPurpose1Consent(gdprConsent) && checkGppStatus(gppConsent)) {
+    if (syncOptions.iframeEnabled && hasPurpose1Consent(gdprConsent)) {
       return [{
         type: 'iframe',
         url: 'https://acdn.adnxs.com/dmp/async_usersync.html'
       }];
+    }
+
+    if (syncOptions.pixelEnabled) {
+      // first attempt using static list
+      const imgList = ['https://px.ads.linkedin.com/setuid?partner=appNexus'];
+      return imgList.map(url => ({
+        type: 'image',
+        url
+      }));
     }
   }
 };
@@ -596,8 +600,7 @@ function newBid(serverBid, rtbBid, bidderRequest) {
       complete: 0,
       nodes: [{
         bsid: rtbBid.buyer_member_id.toString()
-      }],
-    };
+      }]};
 
     return dchain;
   }
@@ -638,7 +641,7 @@ function newBid(serverBid, rtbBid, bidderRequest) {
         bid.vastXml = rtbBid.rtb.video.content;
 
         if (rtbBid.renderer_url) {
-          const videoBid = find(bidderRequest.bids, bid => bid.bidId === serverBid.uuid);
+          const videoBid = ((bidderRequest.bids) || []).find(bid => bid.bidId === serverBid.uuid);
           let rendererOptions = deepAccess(videoBid, 'mediaTypes.video.renderer.options'); // mediaType definition has preference (shouldn't options be .config?)
           if (!rendererOptions) {
             rendererOptions = deepAccess(videoBid, 'renderer.options'); // second the adUnit definition has preference (shouldn't options be .config?)
@@ -690,19 +693,124 @@ function newBid(serverBid, rtbBid, bidderRequest) {
       javascriptTrackers: jsTrackers
     };
     if (nativeAd.main_img) {
-      bid['native'].image = {
+      bid[NATIVE].image = {
         url: nativeAd.main_img.url,
         height: nativeAd.main_img.height,
         width: nativeAd.main_img.width,
       };
     }
     if (nativeAd.icon) {
-      bid['native'].icon = {
+      bid[NATIVE].icon = {
         url: nativeAd.icon.url,
         height: nativeAd.icon.height,
         width: nativeAd.icon.width,
       };
     }
+
+    // Custom fields
+    bid[NATIVE].ext = {
+      video: nativeAd.video,
+      customImage1: nativeAd.image1 && {
+        url: nativeAd.image1.url,
+        height: nativeAd.image1.height,
+        width: nativeAd.image1.width,
+      },
+      customImage2: nativeAd.image2 && {
+        url: nativeAd.image2.url,
+        height: nativeAd.image2.height,
+        width: nativeAd.image2.width,
+      },
+      customImage3: nativeAd.image3 && {
+        url: nativeAd.image3.url,
+        height: nativeAd.image3.height,
+        width: nativeAd.image3.width,
+      },
+      customImage4: nativeAd.image4 && {
+        url: nativeAd.image4.url,
+        height: nativeAd.image4.height,
+        width: nativeAd.image4.width,
+      },
+      customImage5: nativeAd.image5 && {
+        url: nativeAd.image5.url,
+        height: nativeAd.image5.height,
+        width: nativeAd.image5.width,
+      },
+      customIcon1: nativeAd.icon1 && {
+        url: nativeAd.icon1.url,
+        height: nativeAd.icon1.height,
+        width: nativeAd.icon1.width,
+      },
+      customIcon2: nativeAd.icon2 && {
+        url: nativeAd.icon2.url,
+        height: nativeAd.icon2.height,
+        width: nativeAd.icon2.width,
+      },
+      customIcon3: nativeAd.icon3 && {
+        url: nativeAd.icon3.url,
+        height: nativeAd.icon3.height,
+        width: nativeAd.icon3.width,
+      },
+      customIcon4: nativeAd.icon4 && {
+        url: nativeAd.icon4.url,
+        height: nativeAd.icon4.height,
+        width: nativeAd.icon4.width,
+      },
+      customIcon5: nativeAd.icon5 && {
+        url: nativeAd.icon5.url,
+        height: nativeAd.icon5.height,
+        width: nativeAd.icon5.width,
+      },
+      customSocialIcon1: nativeAd.socialicon1 && {
+        url: nativeAd.socialicon1.url,
+        height: nativeAd.socialicon1.height,
+        width: nativeAd.socialicon1.width,
+      },
+      customSocialIcon2: nativeAd.socialicon2 && {
+        url: nativeAd.socialicon2.url,
+        height: nativeAd.socialicon2.height,
+        width: nativeAd.socialicon2.width,
+      },
+      customSocialIcon3: nativeAd.socialicon3 && {
+        url: nativeAd.socialicon3.url,
+        height: nativeAd.socialicon3.height,
+        width: nativeAd.socialicon3.width,
+      },
+      customSocialIcon4: nativeAd.socialicon4 && {
+        url: nativeAd.socialicon4.url,
+        height: nativeAd.socialicon4.height,
+        width: nativeAd.socialicon4.width,
+      },
+      customSocialIcon5: nativeAd.socialicon5 && {
+        url: nativeAd.socialicon5.url,
+        height: nativeAd.socialicon5.height,
+        width: nativeAd.socialicon5.width,
+      },
+      customTitle1: nativeAd.title1,
+      customTitle2: nativeAd.title2,
+      customTitle3: nativeAd.title3,
+      customTitle4: nativeAd.title4,
+      customTitle5: nativeAd.title5,
+      customBody1: nativeAd.body1,
+      customBody2: nativeAd.body2,
+      customBody3: nativeAd.body3,
+      customBody4: nativeAd.body4,
+      customBody5: nativeAd.body5,
+      customCta1: nativeAd.ctatext1,
+      customCta2: nativeAd.ctatext2,
+      customCta3: nativeAd.ctatext3,
+      customCta4: nativeAd.ctatext4,
+      customCta5: nativeAd.ctatext5,
+      customDisplayUrl1: nativeAd.displayurl1,
+      customDisplayUrl2: nativeAd.displayurl2,
+      customDisplayUrl3: nativeAd.displayurl3,
+      customDisplayUrl4: nativeAd.displayurl4,
+      customDisplayUrl5: nativeAd.displayurl5,
+      customSocialUrl1: nativeAd.socialurl1,
+      customSocialUrl2: nativeAd.socialurl2,
+      customSocialUrl3: nativeAd.socialurl3,
+      customSocialUrl4: nativeAd.socialurl4,
+      customSocialUrl5: nativeAd.socialurl5
+    };
   } else {
     Object.assign(bid, {
       width: rtbBid.rtb.banner.width,
@@ -747,7 +855,7 @@ function bidToTag(bid) {
   // page.html?ast_override_div=divId:creativeId,divId2:creativeId2
   const overrides = getParameterByName('ast_override_div');
   if (isStr(overrides) && overrides !== '') {
-    const adUnitOverride = overrides.split(',').find((pair) => pair.startsWith(`${bid.adUnitCode}:`));
+    const adUnitOverride = decodeURIComponent(overrides).split(',').find((pair) => pair.startsWith(`${bid.adUnitCode}:`));
     if (adUnitOverride) {
       const forceCreativeId = adUnitOverride.split(':')[1];
       if (forceCreativeId) {
@@ -840,7 +948,7 @@ function bidToTag(bid) {
       tag.video = {};
       // place any valid video params on the tag
       Object.keys(bid.params.video)
-        .filter(param => includes(VIDEO_TARGETING, param))
+        .filter(param => VIDEO_TARGETING.includes(param))
         .forEach(param => {
           switch (param) {
             case 'context':
@@ -866,7 +974,7 @@ function bidToTag(bid) {
     if (videoMediaType) {
       tag.video = tag.video || {};
       Object.keys(videoMediaType)
-        .filter(param => includes(VIDEO_RTB_TARGETING, param))
+        .filter(param => VIDEO_RTB_TARGETING.includes(param))
         .forEach(param => {
           switch (param) {
             case 'minduration':
@@ -980,7 +1088,7 @@ function getContextFromPlacement(ortbPlacement) {
 }
 
 function getContextFromStartDelay(ortbStartDelay) {
-  if (!ortbStartDelay) {
+  if (typeof ortbStartDelay === 'undefined') {
     return;
   }
 
@@ -1054,10 +1162,10 @@ function hasOmidSupport(bid) {
   const bidderParams = bid.params;
   const videoParams = bid.params.video;
   if (bidderParams.frameworks && isArray(bidderParams.frameworks)) {
-    hasOmid = includes(bid.params.frameworks, 6);
+    hasOmid = bid.params.frameworks.includes(6);
   }
   if (!hasOmid && videoParams && videoParams.frameworks && isArray(videoParams.frameworks)) {
-    hasOmid = includes(bid.params.video.frameworks, 6);
+    hasOmid = bid.params.video.frameworks.includes(6);
   }
   return hasOmid;
 }
@@ -1111,7 +1219,7 @@ function setVideoProperty(tag, key, value) {
 }
 
 function getRtbBid(tag) {
-  return tag && tag.ads && tag.ads.length && find(tag.ads, ad => ad.rtb);
+  return tag && tag.ads && tag.ads.length && ((tag.ads) || []).find(ad => ad.rtb);
 }
 
 function buildNativeRequest(params) {

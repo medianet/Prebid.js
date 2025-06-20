@@ -3,11 +3,15 @@ import {
   dapUtils,
   generateRealTimeData,
   symitriDapRtdSubmodule,
+  onBidWonListener,
   storage, DAP_MAX_RETRY_TOKENIZE, DAP_SS_ID, DAP_TOKEN, DAP_MEMBERSHIP, DAP_ENCRYPTED_MEMBERSHIP
 } from 'modules/symitriDapRtdProvider.js';
 import {server} from 'test/mocks/xhr.js';
 import {hook} from '../../../src/hook.js';
+import { EVENTS } from 'src/constants.js';
 const responseHeader = {'Content-Type': 'application/json'};
+
+let events = require('src/events');
 
 describe('symitriDapRtdProvider', function() {
   const testReqBidsConfigObj = {
@@ -37,26 +41,28 @@ describe('symitriDapRtdProvider', function() {
   };
 
   const cmoduleConfig = {
-    'name': 'dap',
+    'name': 'symitriDap',
     'waitForIt': true,
     'params': {
       'apiHostname': 'prebid.dap.akadns.net',
       'apiVersion': 'x1',
+      'apiAuthToken': 'Token 1234',
       'domain': 'prebid.org',
       'identityType': 'dap-signature:1.0.0',
-      'segtax': 503
+      'segtax': 708
     }
   }
 
   const emoduleConfig = {
-    'name': 'dap',
+    'name': 'symitriDap',
     'waitForIt': true,
     'params': {
       'apiHostname': 'prebid.dap.akadns.net',
       'apiVersion': 'x1',
       'domain': 'prebid.org',
       'identityType': 'dap-signature:1.0.0',
-      'segtax': 504
+      'segtax': 710,
+      'pixelUrl': 'https://www.test.com/pixel'
     }
   }
 
@@ -64,7 +70,15 @@ describe('symitriDapRtdProvider', function() {
     'api_hostname': 'prebid.dap.akadns.net',
     'api_version': 'x1',
     'domain': 'prebid.org',
-    'segtax': 503,
+    'segtax': 708,
+    'identity': sampleIdentity
+  }
+
+  const sampleX2Config = {
+    'api_hostname': 'prebid.dap.akadns.net',
+    'api_version': 'x2',
+    'domain': 'prebid.org',
+    'segtax': 708,
     'identity': sampleIdentity
   }
 
@@ -72,13 +86,14 @@ describe('symitriDapRtdProvider', function() {
     'api_hostname': 'prebid.dap.akadns.net',
     'api_version': 'x1',
     'domain': 'prebid.org',
-    'segtax': 504,
+    'segtax': 710,
     'identity': sampleIdentity
   }
   let cacheExpiry = Math.round(Date.now() / 1000.0) + 300; // in seconds
   const sampleCachedToken = {'expires_at': cacheExpiry, 'token': 'eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2Iiwia2lkIjoicGFzc3dvcmQxIn0..6buzBd2BjtgoyaNbHN8YnQ.l38avCfm3sYNy798-ETYOugz0cOx1cCkjACkAhYszxzrZ0sUJ0AiF-NdDXVTiTyp2Ih3vCWKzS0rKJ8lbS1zhyEVWVu91QwtwseM2fBbwA5ggAgBEo5wV-IXqDLPxVnxsPF0D3hP6cNCiH9Q2c-vULfsLhMhG5zvvZDPBbn4hUY5fKB8LoCBTF9rbuuWGYK1nramnb4AlS5UK82wBsHQea1Ou_Kp5wWCMNZ6TZk5qKIuRBfPIAhQblWvHECaHXkg1wyoM9VASs_yNhne7RR-qkwzbFiPFiMJibNOt9hF3_vPDJO5-06ZBjRTP1BllYGWxI-uQX6InzN18Wtun2WHqg.63sH0SNlIRcsK57v0pMujfB_nhU8Y5CuQbsHqH5MGoM'};
   const cachedEncryptedMembership = {'expires_at': cacheExpiry, 'encryptedSegments': 'eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2Iiwia2lkIjoic29tZXNlY3JldGludmF1bHQifQ..IvnIUQDqWBVYIS0gbcE9bw.Z4NZGvtogWaWlGH4e-GdYKe_PUc15M2x3Bj85rMWsN1A17mIxQIMOfg2hsQ2tgieLu5LggWPmsFu1Wbph6P0k3kOu1dVReoIhOHzxw50rP0DLHKaEZ5mLMJ7Lcosvwh4miIfFuCHlsX7J0sFgOTAp0zGo1S_UsHLtev1JflhjoSB0AoX95ALbAnyctirPuLJM8gZ1vXTiZ01jpvucGyR1lM4cWjPOeD8jPtgwaPGgSRZXE-3X2Cqy7z4Giam5Uqu74LPWTBuKtUQTGyAXA5QJoP7xwTbsU4O1f69lu3fWNqC92GijeTH1A4Zd_C-WXxWuQlDEURjlkWQoaqTHka2OqlnwukEQIf_v0r5KQQX64CTLhEUH91jeD0-E9ClcIP7pwOLxxqiKoaBmx8Mrnm_6Agj5DtTA1rusy3AL63sI_rsUxrmLrVt0Wft4aCfRkW8QpQxu8clFdOmce0NNCGeBCyCPVw9d9izrILlXJ6rItU2cpFrcbz8uw2otamF5eOFCOY3IzHedWVNNuKHFIUVC_xYSlsYvQ8f2QIP1eiMbmukcuPzmTzjw1h1_7IKaj-jJkXrnrY-TdDgX_4-_Z3rmbpXK2yTR7dBrsg-ubqFbgbKic1b4zlQEO_LbBlgPl3DYdWEuJ8CY2NUt1GfpATQGsufS2FTY1YGw_gkPe3q04l_cgLafDoxHvHh_t_0ZgPjciW82gThB_kN4RP7Mc3krVcXl_P6N1VbV07xyx0hCyVsrrxbLslI8q9wYDiLGci7mNmByM5j7SXV9jPwwPkHtn0HfMJlw2PFbIDPjgG3h7sOyLcBIJTTvuUIgpHPIkRWLIl_4FlIucXbJ7orW2nt5BWleBVHgumzGcnl9ZNcZb3W-dsdYPSOmuj0CY28MRTP2oJ1rzLInbDDpIRffJBtR7SS4nYyy7Vi09PtBigod5YNz1Q0WDSJxr8zeH_aKFaXInw7Bfo_U0IAcLiRgcT0ogsMLeQRjRFy27mr4XNJv3NtHhbdjDAwF2aClCktXyXbQaVdsPH2W71v6m2Q9rB5GQWOktw2s5f-4N1-_EBPGq6TgjF-aJZP22MJVwp1pimT50DfOzoeEqDwi862NNwNNoHmcObH0ZfwAXlhRxsgupNBe20-MNNABj2Phlfv4DUrtQbMdfCnNiypzNCmoTb7G7c_o5_JUwoV_GVkwUtvmi_IUm05P4GeMASSUw8zDKVRAj9h31C2cabM8RjMHGhkbCWpUP2pcz9zlJ7Y76Dh3RLnctfTw7DG9U4w4UlaxNZOgLUiSrGwfyapuSiuGUpuOJkBBLiHmEqAGI5C8oJpcVRccNlHxJAYowgXyFopD5Fr-FkXmv8KMkS0h5C9F6KihmDt5sqDD0qnjM0hHJgq01l7wjVnhEmPpyD-6auFQ-xDnbh1uBOJ_0gCVbRad--FSa5p-dXenggegRxOvZXJ0iAtM6Fal5Og-RCjexIHa9WhVbXhQBJpkSTWwAajZJ64eQ.yih49XB51wE-Xob7COT9OYqBrzBmIMVCQbLFx2UdzkI'};
   const cachedMembership = {'expires_at': cacheExpiry, 'said': 'eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2Iiwia2lkIjoicGFzc3dvcmQxIn0..QwvU5h0NVJYaJbs5EqWCKA.XNaJHSlnsH8P-yBIr3gIEqavLONWDIFyj7QCHFwJVkwXH_EYkxrk0_26b0uMPzfJp5URnqxKZusMH9DzEJsmj8EMrKQv1y3IYYMsW5_0BdP5bcAWfG6fzOqtMOwLiYRkYiQOqn1ZVGzhovheHWEmNr2_oCY0LvAr3iN1eG_K-l-bBKvBWnwvuuGKquUfCqO8NMMq6wtkecEXM9blqFRZ7oNYmW2aIG7qcHUsrUW7HMr9Ev2Ik0sIeEUsOYrgf_X_VA64RgKSTRugS9FupMv1p54JkHokwduF9pOFmW8QLQi8itFogKGbbgvOTNnmahxQUX5FcrjjYLqHwKqC8htLdlHnO5LWU9l4A7vLXrRurvoSnh0cAJy0GsdoyEwTqR9bwVFHoPquxlJjQ4buEd7PIxpBj9Qg9oOPH3b2upbMTu5CQ9oj526eXPhP5G54nwGklm2AZ3Vggd7jCQJn45Jjiq0iIfsXAtpqS2BssCLBN8WhmUTnStK8m5sux6WUBdrpDESQjPj-EEHVS-DB5rA7icRUh6EzRxzen2rndvHvnwVhSG_l6cwPYuJ0HE0KBmYHOoqNpKwzoGiKFHrf4ReA06iWB3V2TEGJucGujhtQ9_18WwHCeJ1XtQiiO1eqa3tp5MwAbFXawVFl3FFOBgadrPyvGmkmUJ6FCLU2MSwHiYZmANMnJsokFX_6DwoAgO3U_QnvEHIVSvefc7ReeJ8fBDdmrH3LtuLrUpXsvLvEIMQdWQ_SXhjKIi7tOODR8CfrhUcdIjsp3PZs1DpuOcDB6YJKbGnKZTluLUJi3TyHgyi-DHXdTm-jSE5i_DYJGW-t2Gf23FoQhexv4q7gdrfsKfcRJNrZLp6Gd6jl4zHhUtY.nprKBsy9taQBk6dCPbA7BFF0CiGhQOEF_MazZ2bedqk', 'cohorts': ['9', '11', '13']};
+  const cachedMembershipWithDeals = {'expires_at': cacheExpiry, 'said': 'eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2Iiwia2lkIjoicGFzc3dvcmQxIn0..QwvU5h0NVJYaJbs5EqWCKA.XNaJHSlnsH8P-yBIr3gIEqavLONWDIFyj7QCHFwJVkwXH_EYkxrk0_26b0uMPzfJp5URnqxKZusMH9DzEJsmj8EMrKQv1y3IYYMsW5_0BdP5bcAWfG6fzOqtMOwLiYRkYiQOqn1ZVGzhovheHWEmNr2_oCY0LvAr3iN1eG_K-l-bBKvBWnwvuuGKquUfCqO8NMMq6wtkecEXM9blqFRZ7oNYmW2aIG7qcHUsrUW7HMr9Ev2Ik0sIeEUsOYrgf_X_VA64RgKSTRugS9FupMv1p54JkHokwduF9pOFmW8QLQi8itFogKGbbgvOTNnmahxQUX5FcrjjYLqHwKqC8htLdlHnO5LWU9l4A7vLXrRurvoSnh0cAJy0GsdoyEwTqR9bwVFHoPquxlJjQ4buEd7PIxpBj9Qg9oOPH3b2upbMTu5CQ9oj526eXPhP5G54nwGklm2AZ3Vggd7jCQJn45Jjiq0iIfsXAtpqS2BssCLBN8WhmUTnStK8m5sux6WUBdrpDESQjPj-EEHVS-DB5rA7icRUh6EzRxzen2rndvHvnwVhSG_l6cwPYuJ0HE0KBmYHOoqNpKwzoGiKFHrf4ReA06iWB3V2TEGJucGujhtQ9_18WwHCeJ1XtQiiO1eqa3tp5MwAbFXawVFl3FFOBgadrPyvGmkmUJ6FCLU2MSwHiYZmANMnJsokFX_6DwoAgO3U_QnvEHIVSvefc7ReeJ8fBDdmrH3LtuLrUpXsvLvEIMQdWQ_SXhjKIi7tOODR8CfrhUcdIjsp3PZs1DpuOcDB6YJKbGnKZTluLUJi3TyHgyi-DHXdTm-jSE5i_DYJGW-t2Gf23FoQhexv4q7gdrfsKfcRJNrZLp6Gd6jl4zHhUtY.nprKBsy9taQBk6dCPbA7BFF0CiGhQOEF_MazZ2bedqk', 'cohorts': ['9', '11', '13'], 'deals': ['{"id":"DEMODEAL555","bidfloor":5.0,"at":1,"guar":0}', '{"id":"DEMODEAL111","bidfloor":5.0,"at":1,"guar":0}', '{"id":"DEMODEAL123","bidfloor":5.0,"at":1,"guar":0}']};
   const rtdUserObj = {
     name: 'www.dataprovider3.com',
     ext: {
@@ -97,7 +112,7 @@ describe('symitriDapRtdProvider', function() {
   const encRtdUserObj = {
     name: 'www.dataprovider3.com',
     ext: {
-      segtax: 504,
+      segtax: 710,
       taxonomyname: 'iab_audience_taxonomy'
     },
     segment: []
@@ -194,6 +209,7 @@ describe('symitriDapRtdProvider', function() {
         membershipRequest.respond(200, responseHeader, JSON.stringify(membership));
         let tokenWithExpiry = 'Sample-token-with-exp'
         let tokenizeRequest = server.requests[1];
+        tokenizeRequest.requestHeaders['Content-Type'].should.equal('application/json');
         responseHeader['Symitri-DAP-Token'] = tokenWithExpiry;
         tokenizeRequest.respond(200, responseHeader, JSON.stringify(tokenWithExpiry));
         let data = dapUtils.dapGetRtdObj(membership, cmoduleConfig.params.segtax);
@@ -215,6 +231,7 @@ describe('symitriDapRtdProvider', function() {
         membershipRequest.respond(200, responseHeader, JSON.stringify(encMembership));
         let tokenWithExpiry = 'Sample-token-with-exp'
         let tokenizeRequest = server.requests[1];
+        tokenizeRequest.requestHeaders['Content-Type'].should.equal('application/json');
         responseHeader['Symitri-DAP-Token'] = tokenWithExpiry;
         tokenizeRequest.respond(200, responseHeader, JSON.stringify(tokenWithExpiry));
         let data = dapUtils.dapGetEncryptedRtdObj({'encryptedSegments': encMembership}, emoduleConfig.params.segtax);
@@ -248,6 +265,37 @@ describe('symitriDapRtdProvider', function() {
         }
       );
       let request = server.requests[0];
+      request.requestHeaders['Content-Type'].should.equal('application/json');
+      request.respond(200, responseHeader, JSON.stringify('success'));
+      expect(submoduleCallback).to.equal(undefined);
+    });
+  });
+
+  describe('dapX2Tokenize', function () {
+    it('dapX2Tokenize error callback', function () {
+      let configAsync = JSON.parse(JSON.stringify(sampleX2Config));
+      let submoduleCallback = dapUtils.dapTokenize(configAsync, sampleIdentity, onDone,
+        function(token, status, xhr, onDone) {
+        },
+        function(xhr, status, error, onDone) {
+        }
+      );
+      let request = server.requests[0];
+      request.requestHeaders['Content-Type'].should.equal('application/json');
+      request.respond(400, responseHeader, JSON.stringify('error'));
+      expect(submoduleCallback).to.equal(undefined);
+    });
+
+    it('dapX2Tokenize success callback', function () {
+      let configAsync = JSON.parse(JSON.stringify(sampleX2Config));
+      let submoduleCallback = dapUtils.dapTokenize(configAsync, sampleIdentity, onDone,
+        function(token, status, xhr, onDone) {
+        },
+        function(xhr, status, error, onDone) {
+        }
+      );
+      let request = server.requests[0];
+      request.requestHeaders['Content-Type'].should.equal('application/json');
       request.respond(200, responseHeader, JSON.stringify('success'));
       expect(submoduleCallback).to.equal(undefined);
     });
@@ -262,13 +310,13 @@ describe('symitriDapRtdProvider', function() {
         'api_hostname': 'prebid.dap.akadns.net',
         'api_version': 1,
         'domain': '',
-        'segtax': 503
+        'segtax': 708
       };
       const encConfig = {
         'api_hostname': 'prebid.dap.akadns.net',
         'api_version': 1,
         'domain': '',
-        'segtax': 504
+        'segtax': 710
       };
       let identity = {
         type: 'dap-signature:1.0.0'
@@ -396,7 +444,7 @@ describe('symitriDapRtdProvider', function() {
         apiHostname: 'prebid.dap.akadns.net',
         apiVersion: 'x1',
         domain: 'prebid.org',
-        segtax: 503
+        segtax: 708
       };
       expect(dapUtils.dapRefreshMembership(ortb2, config, 'token', onDone)).to.equal(undefined)
       const membership = {cohorts: ['1', '5', '7']}
@@ -405,11 +453,11 @@ describe('symitriDapRtdProvider', function() {
   });
 
   describe('checkAndAddRealtimeData test', function () {
-    it('add realtime data for segtax 503 and 504', function () {
-      dapUtils.checkAndAddRealtimeData(ortb2, cachedEncRtd, 504);
-      dapUtils.checkAndAddRealtimeData(ortb2, cachedEncRtd, 504);
+    it('add realtime data for segtax 708 and 710', function () {
+      dapUtils.checkAndAddRealtimeData(ortb2, cachedEncRtd, 710);
+      dapUtils.checkAndAddRealtimeData(ortb2, cachedEncRtd, 710);
       expect(ortb2.user.data).to.deep.include.members([encRtdUserObj]);
-      dapUtils.checkAndAddRealtimeData(ortb2, cachedRtd, 503);
+      dapUtils.checkAndAddRealtimeData(ortb2, cachedRtd, 708);
       expect(ortb2.user.data).to.deep.include.members([rtdUserObj]);
     });
   });
@@ -427,6 +475,7 @@ describe('symitriDapRtdProvider', function() {
     it('test dapRefreshToken success response', function () {
       dapUtils.dapRefreshToken(ortb2, sampleConfig, true, onDone)
       let request = server.requests[0];
+      request.requestHeaders['Content-Type'].should.equal('application/json');
       responseHeader['Symitri-DAP-Token'] = sampleCachedToken.token;
       request.respond(200, responseHeader, JSON.stringify(sampleCachedToken.token));
       expect(JSON.parse(storage.getDataFromLocalStorage(DAP_TOKEN)).token).to.be.equal(sampleCachedToken.token);
@@ -435,6 +484,7 @@ describe('symitriDapRtdProvider', function() {
     it('test dapRefreshToken success response with deviceid 100', function () {
       dapUtils.dapRefreshToken(ortb2, esampleConfig, true, onDone)
       let request = server.requests[0];
+      request.requestHeaders['Content-Type'].should.equal('application/json');
       responseHeader['Symitri-DAP-100'] = sampleCachedToken.token;
       request.respond(200, responseHeader, '');
       expect(storage.getDataFromLocalStorage('dap_deviceId100')).to.be.equal(sampleCachedToken.token);
@@ -445,6 +495,7 @@ describe('symitriDapRtdProvider', function() {
       let request = server.requests[0];
       let tokenWithExpiry = 'eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2Iiwia2lkIjoicGFzc3dvcmQxIiwiZXhwIjoxNjQzODMwMzY5fQ..hTbcSQgmmO0HUJJrQ5fRHw.7zjrQXNNVkb-GD0ZhIVhEPcWbyaDBilHTWv-bp1lFZ9mdkSC0QbcAvUbYteiTD7ya23GUwcL2WOW8WgRSHaWHOJe0B5NDqfdUGTzElWfu7fFodRxRgGmwG8Rq5xxteFKLLGHLf1mFYRJKDtjtgajGNUKIDfn9AEt-c5Qz4KU8VolG_KzrLROx-f6Z7MnoPTcwRCj0WjXD6j2D6RAZ80-mKTNIsMIELdj6xiabHcjDJ1WzwtwCZSE2y2nMs451pSYp8W-bFPfZmDDwrkjN4s9ASLlIXcXgxK-H0GsiEbckQOZ49zsIKyFtasBvZW8339rrXi1js-aBh99M7aS5w9DmXPpUDmppSPpwkeTfKiqF0cQiAUq8tpeEQrGDJuw3Qt2.XI8h9Xw-VZj_NOmKtV19wLM63S4snos7rzkoHf9FXCw'
       responseHeader['Symitri-DAP-Token'] = tokenWithExpiry;
+      request.requestHeaders['Content-Type'].should.equal('application/json');
       request.respond(200, responseHeader, JSON.stringify(tokenWithExpiry));
       expect(JSON.parse(storage.getDataFromLocalStorage(DAP_TOKEN)).expires_at).to.be.equal(1643830359);
     });
@@ -453,6 +504,7 @@ describe('symitriDapRtdProvider', function() {
       storage.setDataInLocalStorage(DAP_TOKEN, JSON.stringify(sampleCachedToken));
       dapUtils.dapRefreshToken(ortb2, sampleConfig, false, onDone)
       let request = server.requests[0];
+      request.requestHeaders['Content-Type'].should.equal('application/json');
       request.respond(400, responseHeader, 'error');
       expect(JSON.parse(storage.getDataFromLocalStorage(DAP_TOKEN)).expires_at).to.be.equal(cacheExpiry);// Since the expiry is same, the token is not updated in the cache
     });
@@ -466,7 +518,7 @@ describe('symitriDapRtdProvider', function() {
       let request = server.requests[0];
       responseHeader['Symitri-DAP-Token'] = encMembership;
       request.respond(200, responseHeader, encMembership);
-      let rtdObj = dapUtils.dapGetEncryptedRtdObj({'encryptedSegments': encMembership}, 504)
+      let rtdObj = dapUtils.dapGetEncryptedRtdObj({'encryptedSegments': encMembership}, 710)
       expect(ortb2.user.data).to.deep.include.members(rtdObj.rtd.ortb2.user.data);
       expect(JSON.parse(storage.getDataFromLocalStorage(DAP_ENCRYPTED_MEMBERSHIP)).expires_at).to.equal(expiry);
     });
@@ -477,7 +529,7 @@ describe('symitriDapRtdProvider', function() {
       let request = server.requests[0];
       responseHeader['Symitri-DAP-Token'] = encMembership;
       request.respond(200, responseHeader, encMembership);
-      let rtdObj = dapUtils.dapGetEncryptedRtdObj({'encryptedSegments': encMembership}, 504)
+      let rtdObj = dapUtils.dapGetEncryptedRtdObj({'encryptedSegments': encMembership}, 710)
       expect(ortb2.user.data).to.deep.include.members(rtdObj.rtd.ortb2.user.data);
       expect(JSON.parse(storage.getDataFromLocalStorage(DAP_ENCRYPTED_MEMBERSHIP)).expires_at).to.equal(1643830630);
     });
@@ -508,7 +560,7 @@ describe('symitriDapRtdProvider', function() {
       dapUtils.dapRefreshMembership(ortb2, sampleConfig, sampleCachedToken.token, onDone);
       let request = server.requests[0];
       request.respond(200, responseHeader, JSON.stringify(membership));
-      let rtdObj = dapUtils.dapGetRtdObj(membership, 503);
+      let rtdObj = dapUtils.dapGetRtdObj(membership, 708);
       expect(ortb2.user.data).to.deep.include.members(rtdObj.rtd.ortb2.user.data);
     });
 
@@ -517,7 +569,7 @@ describe('symitriDapRtdProvider', function() {
       dapUtils.dapRefreshMembership(ortb2, sampleConfig, sampleCachedToken.token, onDone);
       let request = server.requests[0];
       request.respond(200, responseHeader, JSON.stringify(membership));
-      let rtdObj = dapUtils.dapGetRtdObj(membership, 503)
+      let rtdObj = dapUtils.dapGetRtdObj(membership, 708)
       expect(ortb2.user.data).to.deep.include.members(rtdObj.rtd.ortb2.user.data);
       expect(JSON.parse(storage.getDataFromLocalStorage(DAP_MEMBERSHIP)).expires_at).to.be.equal(1647971548);
     });
@@ -556,6 +608,7 @@ describe('symitriDapRtdProvider', function() {
       let expiry = Math.round(Date.now() / 1000.0) + 300; // in seconds
       dapUtils.dapRefreshToken(ortb2, sampleConfig, false, onDone)
       let request = server.requests[0];
+      request.requestHeaders['Content-Type'].should.equal('application/json');
       let sampleSSID = 'Test_SSID_Spec';
       responseHeader['Symitri-DAP-Token'] = sampleCachedToken.token;
       responseHeader['Symitri-DAP-SS-ID'] = sampleSSID;
@@ -568,6 +621,7 @@ describe('symitriDapRtdProvider', function() {
       storage.setDataInLocalStorage(DAP_SS_ID, JSON.stringify('Test_SSID_Spec'))
       dapUtils.dapRefreshToken(ortb2, sampleConfig, false, onDone)
       let request = server.requests[0];
+      request.requestHeaders['Content-Type'].should.equal('application/json');
       let ssidHeader = request.requestHeaders['Symitri-DAP-SS-ID'];
       responseHeader['Symitri-DAP-Token'] = sampleCachedToken.token;
       request.respond(200, responseHeader, '');
@@ -595,6 +649,60 @@ describe('symitriDapRtdProvider', function() {
 
     it('USP consent present and user have not opted out', function () {
       expect(symitriDapRtdSubmodule.init(null, {'usp': '1YNY'})).to.equal(true);
+    });
+  });
+
+  describe('Test identifier is added properly to apiParams', function() {
+    let sandbox;
+
+    beforeEach(() => {
+      sandbox = sinon.createSandbox();
+    });
+
+    afterEach(() => {
+      sandbox.restore();
+    });
+
+    it('passed identifier is handled', async function () {
+      const test_identity = 'test_identity_1234';
+      let identity = {
+        value: test_identity
+      };
+      let apiParams = {
+        'type': identity.type,
+      };
+
+      if (window.crypto && window.crypto.subtle) {
+        let hid = await dapUtils.addIdentifier(identity, apiParams).then();
+        expect(hid['identity']).is.equal('843BE0FB20AAE699F27E5BC88C554B716F3DD366F58C1BDE0ACFB7EA0DD90CE7');
+      } else {
+        expect(window.crypto.subtle).is.undefined
+      }
+    });
+
+    it('passed undefined identifier is handled', async function () {
+      const test_identity = undefined;
+      let identity = {
+        identity: test_identity
+      }
+      let apiParams = {
+        'type': identity.type,
+      };
+
+      let hid = await dapUtils.addIdentifier(identity, apiParams);
+      expect(hid.identity).is.undefined;
+    });
+  });
+
+  describe('onBidResponseEvent', function () {
+    const bidResponse = {adId: 'ad_123', bidder: 'test_bidder', bidderCode: 'test_bidder_code', cpm: '1.5', creativeId: 'creative_123', dealId: 'DEMODEAL555', mediaType: 'banner', responseTimestamp: '1725892736147', ad: ''};
+    let url = emoduleConfig.params.pixelUrl + '?token=' + sampleCachedToken.token + '&ad_id=' + bidResponse.adId + '&bidder=' + bidResponse.bidder + '&bidder_code=' + bidResponse.bidderCode + '&cpm=' + bidResponse.cpm + '&creative_id=' + bidResponse.creativeId + '&deal_id=' + bidResponse.dealId + '&media_type=' + bidResponse.mediaType + '&response_timestamp=' + bidResponse.responseTimestamp;
+    let adPixel = `${bidResponse.ad}<script src="${url}"/>`;
+    it('should add pixel to "BidResponse" ad', function () {
+      storage.setDataInLocalStorage(DAP_MEMBERSHIP, JSON.stringify(cachedMembershipWithDeals));
+      storage.setDataInLocalStorage(DAP_TOKEN, JSON.stringify(sampleCachedToken));
+      symitriDapRtdSubmodule.onBidResponseEvent(bidResponse, emoduleConfig);
+      expect(bidResponse.ad).to.equal(adPixel);
     });
   });
 });

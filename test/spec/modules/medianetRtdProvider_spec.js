@@ -1,7 +1,6 @@
 import * as medianetRTD from '../../../modules/medianetRtdProvider.js';
 import * as sinon from 'sinon';
 import { assert } from 'chai';
-import * as utils from '../../../src/utils.js';
 
 let sandbox;
 let setDataSpy;
@@ -19,10 +18,7 @@ const conf = {
 
 describe('medianet realtime module', function () {
   beforeEach(function () {
-    sandbox = sinon.sandbox.create();
-    const insertStub = sandbox.stub(utils, 'insertElement')
-    insertStub.withArgs(sinon.match.any, sinon.match.any, 'head')
-      .returns(() => void 0)
+    sandbox = sinon.createSandbox();
     window.mnjs = window.mnjs || {};
     window.mnjs.que = window.mnjs.que || [];
     window.mnjs.setData = setDataSpy = sandbox.spy();
