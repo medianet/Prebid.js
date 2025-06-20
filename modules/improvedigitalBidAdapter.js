@@ -282,7 +282,7 @@ const ID_REQUEST = {
         ortbRequest,
         bidderRequest,
         options: {
-          endpointCompression: true,
+          endpointCompression: false,
         },
       }
     }
