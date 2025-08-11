@@ -17,6 +17,7 @@
 	"appnexusBidAdapter",
 	"betweenBidAdapter",
 	"criteoBidAdapter",
+	"equativBidAdapter",
 	"improvedigitalBidAdapter",
 	"ixBidAdapter",
 	"medianetBidAdapter",
