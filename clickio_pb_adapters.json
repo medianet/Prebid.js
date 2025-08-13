@@ -22,6 +22,7 @@
 	"ixBidAdapter",
 	"medianetBidAdapter",
 	"mgidBidAdapter",
+    "missenaBidAdapter",
 	"mytargetBidAdapter",
 	"oguryBidAdapter",
 	"onetagBidAdapter",
