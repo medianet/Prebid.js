@@ -1,5 +1,11 @@
 function _getDNT(win) {
-  return win.navigator.doNotTrack === '1' || win.doNotTrack === '1' || win.navigator.msDoNotTrack === '1' || win.navigator.doNotTrack?.toLowerCase?.() === 'yes';
+  try {
+    const nav = (win && win.navigator) || {};
+    const doNotTrack = nav.doNotTrack ?? win?.doNotTrack ?? nav.msDoNotTrack;
+    return doNotTrack === '1' || (typeof doNotTrack === 'string' && doNotTrack.toLowerCase() === 'yes');
+  } catch (e) {
+    return false;
+  }
 }
 
 export function getDNT(win = window) {
