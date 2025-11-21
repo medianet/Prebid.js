@@ -30,9 +30,11 @@ export function getDNT(win = window) {
 
   valuesToInspect.push(win.doNotTrack);
 
-  if (topWindow && topWindow !== win) {
-    valuesToInspect.push(topWindow.doNotTrack);
-  }
+  try {
+    if (topWindow && topWindow !== win) {
+      valuesToInspect.push(topWindow.doNotTrack);
+    }
+  } catch (error) {}
 
   const navigatorInstances = new Set();
 
@@ -40,9 +42,11 @@ export function getDNT(win = window) {
     navigatorInstances.add(win.navigator);
   }
 
-  if (topWindow && topWindow.navigator) {
-    navigatorInstances.add(topWindow.navigator);
-  }
+  try {
+    if (topWindow && topWindow.navigator) {
+      navigatorInstances.add(topWindow.navigator);
+    }
+  } catch (error) {}
 
   navigatorInstances.forEach(navigatorInstance => {
     valuesToInspect.push(navigatorInstance.doNotTrack, navigatorInstance.msDoNotTrack);
