@@ -1,4 +1,5 @@
 [
+    "schain",
 	"userId",
 	"consentManagementTcf",
 
@@ -12,6 +13,7 @@
     "adagioBidAdapter",
 	"admixerBidAdapter",
 	"adriverBidAdapter",
+	"adyoulikeBidAdapter",
 	"amxBidAdapter",
 	"appnexusBidAdapter",
 	"betweenBidAdapter",
