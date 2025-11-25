@@ -17,6 +17,7 @@
 	"amxBidAdapter",
 	"appnexusBidAdapter",
 	"betweenBidAdapter",
+	"clickioBidAdapter",
 	"connectadBidAdapter",
     "criteoBidAdapter",
 	"equativBidAdapter",
