@@ -28,6 +28,7 @@
     "missenaBidAdapter",
 	"mytargetBidAdapter",
 	"oguryBidAdapter",
+	"omsBidAdapter",
 	"onetagBidAdapter",
 	"openxBidAdapter",
 	"otmBidAdapter",
