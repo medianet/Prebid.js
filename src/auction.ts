@@ -787,7 +787,8 @@ function addCommonResponseProperties(bidResponse: Partial<Bid>, adUnitCode: stri
 
   bidResponse.timeToRespond = bidResponse.responseTimestamp - bidResponse.requestTimestamp;
 
-  const bidReq           = bidderRequest && bidderRequest.bids && bidderRequest.bids.find(bid => bid.adUnitCode == adUnitCode && bid.bidId == bidResponse.requestId);
+  const bidderRequest = index.getBidderRequest(bidResponse);
+  const bidReq        = bidderRequest && bidderRequest.bids && bidderRequest.bids.find(bid => bid.adUnitCode == adUnitCode && bid.bidId == bidResponse.requestId);
   (bidResponse as any).__sds_id__ = bidReq.__sds_id__;
 }
 
