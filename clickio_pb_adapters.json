@@ -8,6 +8,7 @@
 	"criteoIdSystem",
 
     "rtdModule",
+    "geolocationRtdProvider",
     "adagioRtdProvider",
 
     "adagioBidAdapter",
