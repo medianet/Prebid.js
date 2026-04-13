@@ -39,6 +39,7 @@
 	"richaudienceBidAdapter",
 	"rtbhouseBidAdapter",
 	"rubiconBidAdapter",
+	"magniteBidAdapter",
 	"seedtagBidAdapter",
 	"sharethroughBidAdapter",
 	"smartadserverBidAdapter",
