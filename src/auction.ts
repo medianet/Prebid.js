@@ -770,6 +770,11 @@ function addCommonResponseProperties(bidResponse: Partial<Bid>, adUnitCode: stri
     bidResponse.ttlBuffer = adUnit.ttlBuffer;
   }
 
+  bidResponse.timeToRespond = bidResponse.responseTimestamp - bidResponse.requestTimestamp;
+
+  const bidderRequest = index.getBidderRequest(bidResponse);
+  const bidReq        = bidderRequest && bidderRequest.bids && bidderRequest.bids.find(bid => bid.adUnitCode == adUnitCode && bid.bidId == bidResponse.requestId);
+
   // window.console.groupCollapsed('addCommonResponseProperties (' + bidResponse.bidder + ')');
   //   window.console.groupCollapsed('adUnitCode');
   //   window.console.log(adUnitCode);
@@ -785,10 +790,6 @@ function addCommonResponseProperties(bidResponse: Partial<Bid>, adUnitCode: stri
   //
   // window.console.groupEnd();
 
-  bidResponse.timeToRespond = bidResponse.responseTimestamp - bidResponse.requestTimestamp;
-
-  const bidderRequest = index.getBidderRequest(bidResponse);
-  const bidReq        = bidderRequest && bidderRequest.bids && bidderRequest.bids.find(bid => bid.adUnitCode == adUnitCode && bid.bidId == bidResponse.requestId);
   (bidResponse as any).__sds_id__ = bidReq.__sds_id__;
 }
 
