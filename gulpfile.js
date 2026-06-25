@@ -18,7 +18,6 @@ var concat = require('gulp-concat');
 var replace = require('gulp-replace');
 const execaCmd = require('execa');
 var gulpif = require('gulp-if');
-var sourcemaps = require('gulp-sourcemaps');
 var through = require('through2');
 var fs = require('fs');
 var jsEscape = require('gulp-js-escape');
@@ -316,7 +315,6 @@ function bundle(dev, moduleArr) {
 
   const wrap = wrapWithHeaderAndFooter(dev, modules, sm);
   const source = wrap(gulp.src(entries, {sourcemaps: sm}))
-    .pipe(gulpif(sm, sourcemaps.init({ loadMaps: true })))
     .pipe(replace(/\/\*[\s\S]*?\@license[\s\S]*?\*\//g, ''))
     .pipe(gulpif(notCore, through.obj(function(file, _, cb) {
       if (file.isBuffer()) {
@@ -329,8 +327,7 @@ function bundle(dev, moduleArr) {
       this.push(file);
       cb();
     })))
-    .pipe(concat(outputFileName))
-    .pipe(gulpif(sm, sourcemaps.write('.')));
+    .pipe(concat(outputFileName));
   const disclosure = disclosureSummary(['prebid-core'].concat(modules), disclosureFile);
   return merge(source, disclosure);
 }

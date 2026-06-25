@@ -11,6 +11,10 @@ const fs = require('fs');
 const filter = import('gulp-filter');
 const {buildOptions} = require('./plugins/buildOptions.js');
 
+function importPath(file) {
+  return file.replace(/\\/g, '/');
+}
+
 function getDefaults({distUrlBase = null, disableFeatures = null, dev = false}) {
   if (dev && distUrlBase == null) {
     distUrlBase = argv.distUrlBase || '/build/dev/'
@@ -36,7 +40,7 @@ const babelPrecomp = _.memoize(
         .pipe(babel(babelConfig))
         .pipe(tap(file => {
           file.sourceMap.file = file.basename;
-          file.sourceMap.sourceRoot = path.join(relativeSourceRoot, path.relative(file.dirname, sourceRoot))
+          file.sourceMap.sourceRoot = importPath(path.join(relativeSourceRoot, path.relative(file.dirname, sourceRoot)))
         }))
         .pipe(gulp.dest(helpers.getPrecompiledPath(), {
           sourcemaps: '.'
@@ -107,7 +111,7 @@ const generatePublicModules = _.memoize(
       const fileName = filePath.name.replace(/\.d$/gi, '');
       const moduleName = fileName === 'index' ? path.basename(filePath.dir) : fileName;
       const publicName = `${moduleName}.${ext}`;
-      const modulePath = path.relative(publicDir, file.path);
+      const modulePath = importPath(path.relative(publicDir, file.path));
       const publicPath = path.join(publicDir, publicName);
       return {modulePath, publicPath}
     }
@@ -144,7 +148,7 @@ function generateTypeSummary(folder, dest, ignore = dest) {
   const destDir = path.parse(dest).dir;
   return function (done) {
     glob([`${folder}/**/*.d.ts`], {ignore}).then(files => {
-      files = files.map(file => path.relative(destDir, file))
+      files = files.map(file => importPath(path.relative(destDir, file)))
       if (!fs.existsSync(destDir)) {
         fs.mkdirSync(destDir, {recursive: true});
       }
