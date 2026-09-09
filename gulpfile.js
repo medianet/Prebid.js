@@ -26,6 +26,7 @@ const {minify} = require('terser');
 const Vinyl = require('vinyl');
 const rename = require('gulp-rename');
 const merge = require('merge-stream');
+const clickioBundleDestination = require('./gulp.clickioBundleDestination.js');
 
 var prebid = require('./package.json');
 
@@ -170,12 +171,8 @@ function getModulesListToAddInBanner(modules) {
   }
 }
 
-function gulpBundle(dev) {
-  return bundle(dev)
-    .pipe(gulp.dest('build/' + (dev ? 'dev' : 'dist'), {
-      sourcemaps: dev || argv.sourceMaps ? '.' : false
-    }))
-    .pipe(gulp.dest('../client-js/bundles'));
+function gulpBundle(dev, done) {
+  return clickioBundleDestination.copyBundle(() => bundle(dev), dev, argv, done);
 }
 
 function nodeBundle(modules, dev = false) {
@@ -292,12 +289,7 @@ function bundle(dev, moduleArr) {
   });
   const entries = _.uniq([coreFile].concat(Array.from(dependencies), moduleFiles));
 
-  var outputFileName = argv.bundleName ? argv.bundleName : 'prebid.js';
-
-  // change output filename if argument --tag given
-  if (argv.tag && argv.tag.length) {
-    outputFileName = outputFileName.replace(/\.js$/, `.${argv.tag}.js`);
-  }
+  var outputFileName = clickioBundleDestination.getBundleFileName(argv);
   const disclosureFile = path.parse(outputFileName).name + '_disclosures.json';
 
   fancyLog('Concatenating files:\n', entries);

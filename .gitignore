@@ -87,3 +87,4 @@ typings/
 # Webpack cache
 .cache/
 .eslintcache
+.clickio-bundle-destination.json
