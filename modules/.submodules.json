@@ -87,6 +87,7 @@
       "browsiRtdProvider",
       "chromeAiRtdProvider",
       "cleanioRtdProvider",
+      "clickioRtdProvider",
       "confiantRtdProvider",
       "contxtfulRtdProvider",
       "datamageRtdProvider",
