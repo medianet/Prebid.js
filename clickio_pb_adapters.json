@@ -9,6 +9,7 @@
     "rtdModule",
     "geolocationRtdProvider",
     "adagioRtdProvider",
+    "clickioRtdProvider",
 
     "adagioBidAdapter",
 	"admixerBidAdapter",
